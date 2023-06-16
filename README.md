@@ -14,8 +14,8 @@ If the program is placed correctly on an SD card, Wii U Time Sync will be listed
 * If Wii U Time Sync doesn't show up in the Wii U Plugin System Config Menu, confirm you placed the WPS file on your SD card correctly and restart your console.
 * `Configuration -> Syncing Enabled`: Enables syncing to the Internet, `false` by default.
 * `Configuration -> Daylight Savings`: Adds an extra hour to account for Daylight Savings Time, `false` by default.
-* `Configuration -> Time Offsets (hours)`: The amount of hours to add/subtract from the coordinated universal time, `0` by default.
-* `Configuration -> Time Offsets (minutes)`: The amount of minutes to add/subtract from the coordinated universal time, `0` by default.
+* `Configuration -> Time Offset (hours)`: The amount of hours to add/subtract from the coordinated universal time, `0` by default.
+* `Configuration -> Time Offset (minutes)`: The amount of minutes to add/subtract from the coordinated universal time, `0` by default.
 * `Preview Time`: Lets you preview what the system's clock is currently set to.
 
 As long as syncing is enabled by the user, the clock will sync whenever Wii U Time Sync starts, or when the plugin settings are exited.
