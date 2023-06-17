@@ -257,7 +257,7 @@ WUPS_GET_CONFIG() {
     OSCalendarTime ct;
     OSTicksToCalendarTime(OSGetTime(), &ct);
     char timeString[256];
-    snprintf(timeString, 255, "Current Time: %04d-%02d-%02d %02d:%02d:%02d:%04d:%04d\n", ct.tm_year, ct.tm_mon, ct.tm_mday, ct.tm_hour, ct.tm_min, ct.tm_sec, ct.tm_msec, ct.tm_usec);
+    snprintf(timeString, 255, "Current Time: %04d-%02d-%02d %02d:%02d:%02d:%04d:%04d\n", ct.tm_year, ct.tm_mon + 1, ct.tm_mday, ct.tm_hour, ct.tm_min, ct.tm_sec, ct.tm_msec, ct.tm_usec);
     WUPSConfigItemStub_AddToCategoryHandled(settings, preview, "time", timeString);
 
     return settings;
