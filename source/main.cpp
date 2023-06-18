@@ -35,7 +35,7 @@
 // Important plugin information.
 WUPS_PLUGIN_NAME("Wii U Time Sync");
 WUPS_PLUGIN_DESCRIPTION("A plugin that synchronizes a Wii U's clock to the Internet.");
-WUPS_PLUGIN_VERSION("v1.0.1");
+WUPS_PLUGIN_VERSION("v1.1.0");
 WUPS_PLUGIN_AUTHOR("Nightkingale");
 WUPS_PLUGIN_LICENSE("MIT");
 
