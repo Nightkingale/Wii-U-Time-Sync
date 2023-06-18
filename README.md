@@ -20,7 +20,7 @@ If the program is placed correctly on an SD card, Wii U Time Sync will be listed
 
 As long as syncing is enabled by the user, the clock will sync whenever Wii U Time Sync starts, or when the plugin settings are exited.
 
-**The changes will not be reflected in the Home Menu and most other applications right away, so the console will need to be rebooted for changes to be completed.**
+**The changes will not be reflected in the HOME Menu and most other applications right away, so the console will need to be rebooted for changes to be completed.**
 
 ## Credits
 I hope that I am able to express my thanks as much as possible to those who made this repository possible.
