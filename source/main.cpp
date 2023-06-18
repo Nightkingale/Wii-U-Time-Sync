@@ -12,6 +12,7 @@
 #include <coreinit/mcp.h>
 #include <coreinit/time.h>
 #include <nn/pdm.h>
+#include <notifications/notifications.h>
 #include <whb/proc.h>
 #include <wups.h>
 #include <wups/config/WUPSConfigItemBoolean.h>
@@ -25,6 +26,7 @@
 
 #define SYNCING_ENABLED_CONFIG_ID "enabledSync"
 #define DST_ENABLED_CONFIG_ID "enabledDST"
+#define NOTIFY_ENABLED_CONFIG_ID "enabledNotify"
 #define OFFSET_HOURS_CONFIG_ID "offsetHours"
 #define OFFSET_MINUTES_CONFIG_ID "offsetMinutes"
 // Seconds between 1900 (NTP epoch) and 2000 (Wii U epoch)
@@ -42,6 +44,7 @@ WUPS_USE_STORAGE("Wii U Time Sync");
 
 bool enabledSync = false;
 bool enabledDST = false;
+bool enabledNotify = true;
 int offsetHours = 0;
 int offsetMinutes = 0;
 
@@ -187,6 +190,10 @@ void updateTime() {
     }
 
     SetSystemTime(time); // This finally sets the console time.
+
+    if (enabledNotify) {
+        NotificationModule_AddInfoNotification("The time has been changed based on your Internet connection.");
+    }
 }
 
 INITIALIZE_PLUGIN() {
@@ -201,6 +208,10 @@ INITIALIZE_PLUGIN() {
             WUPS_StoreBool(nullptr, DST_ENABLED_CONFIG_ID, enabledDST);
         }
 
+        if ((storageRes = WUPS_GetBool(nullptr, NOTIFY_ENABLED_CONFIG_ID, &enabledNotify)) == WUPS_STORAGE_ERROR_NOT_FOUND) {
+            WUPS_StoreBool(nullptr, NOTIFY_ENABLED_CONFIG_ID, enabledNotify);
+        }
+
         if ((storageRes = WUPS_GetInt(nullptr, OFFSET_HOURS_CONFIG_ID, &offsetHours)) == WUPS_STORAGE_ERROR_NOT_FOUND) {
             WUPS_StoreInt(nullptr, OFFSET_HOURS_CONFIG_ID, offsetHours);
         }
@@ -209,6 +220,7 @@ INITIALIZE_PLUGIN() {
             WUPS_StoreInt(nullptr, OFFSET_MINUTES_CONFIG_ID, offsetMinutes);
         }
 
+        NotificationModule_InitLibrary(); // Set up for notifications.
         WUPS_CloseStorage(); // Close the storage.
     }
 
@@ -230,6 +242,11 @@ void savingsEnabled(ConfigItemBoolean *item, bool value)
     enabledDST = value;
 }
 
+void notifyEnabled(ConfigItemBoolean *item, bool value)
+{
+    WUPS_StoreBool(nullptr, NOTIFY_ENABLED_CONFIG_ID, value);
+    enabledNotify = value;
+}
 
 void onHourOffsetChanged(ConfigItemIntegerRange *item, int32_t offset)
 {
@@ -258,6 +275,7 @@ WUPS_GET_CONFIG() {
 
     WUPSConfigItemBoolean_AddToCategoryHandled(settings, config, "enabledSync", "Syncing Enabled", enabledSync, &syncingEnabled);
     WUPSConfigItemBoolean_AddToCategoryHandled(settings, config, "enabledDST", "Daylight Savings", enabledDST, &savingsEnabled);
+    WUPSConfigItemBoolean_AddToCategoryHandled(settings, config, "enabledNotify", "Receive Notifications", enabledNotify, &notifyEnabled);
     WUPSConfigItemIntegerRange_AddToCategoryHandled(settings, config, "offsetHours", "Time Offset (hours)", offsetHours, -12, 14, &onHourOffsetChanged);
     WUPSConfigItemIntegerRange_AddToCategoryHandled(settings, config, "offsetMinutes", "Time Offset (minutes)", offsetMinutes, 0, 59, &onMinuteOffsetChanged);
 
