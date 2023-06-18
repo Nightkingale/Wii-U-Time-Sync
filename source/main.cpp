@@ -179,6 +179,13 @@ void updateTime() {
 
     time += OSSecondsToTicks(offsetMinutes * 60);
 
+    OSTime currentTime = OSGetTime();
+    int timeDifference = abs(time - currentTime);
+
+    if (static_cast<uint64_t>(timeDifference) <= OSMillisecondsToTicks(250)) {
+        return; // Time difference is within 250 milliseconds, no need to update.
+    }
+
     SetSystemTime(time); // This finally sets the console time.
 }
 
