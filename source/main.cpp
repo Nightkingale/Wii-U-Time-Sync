@@ -32,6 +32,9 @@
 // Seconds between 1900 (NTP epoch) and 2000 (Wii U epoch)
 #define NTP_TIMESTAMP_DELTA 3155673600llu
 #define LI_UNSYNC 0xc0
+#define MODE_MASK 0x7
+#define MODE_CLIENT 0x3
+#define MODE_SERVER 0x4
 
 // Important plugin information.
 WUPS_PLUGIN_NAME("Wii U Time Sync");
@@ -104,7 +107,7 @@ OSTime NTPGetTime(const char* hostname)
     memset(&packet, 0, sizeof(packet));
 
     // Set the first byte's bits to 00,001,011 for li = 0, vn = 1, and mode = 3. The rest will be left set to zero.
-    packet.li_vn_mode = 0x0b;
+    packet.li_vn_mode = (1 << 3) | MODE_CLIENT;
 
     // Create a socket
     int sockfd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
@@ -151,7 +154,7 @@ OSTime NTPGetTime(const char* hostname)
     close(sockfd);
 
     // Basic validity check:
-    if ((packet.li_vn_mode & LI_UNSYNC) == LI_UNSYNC || packet.stratum == 0 || !(packet.txTm_s | packet.txTm_f)) {
+    if ((packet.li_vn_mode & LI_UNSYNC) == LI_UNSYNC || (packet.li_vn_mode & MODE_MASK) != MODE_SERVER || packet.stratum == 0 || !(packet.txTm_s | packet.txTm_f)) {
         return 0;
     }
 
