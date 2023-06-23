@@ -271,16 +271,23 @@ void onMinuteOffsetChanged(ConfigItemIntegerRange *item, int32_t offset)
 }
 
 static void setTimeInSettings() {
+    OSTime ot;
     OSCalendarTime ct;
     char timeString[256];
 
-    OSTicksToCalendarTime(OSGetTime(), &ct);
+    ot = NTPGetTime(NTP_SERVER);
+    if (ot == 0) {
+        WUPSConfigItem_SetDisplayName(ntpTimeHandle->handle, "Current NTP Time: N/A");
+    } else {
+        OSTicksToCalendarTime(ot, &ct);
+        snprintf(timeString, 255, "Current NTP Time: %04d-%02d-%02d %02d:%02d:%02d:%04d:%04d\n", ct.tm_year, ct.tm_mon + 1, ct.tm_mday, ct.tm_hour, ct.tm_min, ct.tm_sec, ct.tm_msec, ct.tm_usec);
+        WUPSConfigItem_SetDisplayName(ntpTimeHandle->handle, timeString);
+    }
+
+    ot = OSGetTime();
+    OSTicksToCalendarTime(ot, &ct);
     snprintf(timeString, 255, "Current SYS Time: %04d-%02d-%02d %02d:%02d:%02d:%04d:%04d\n", ct.tm_year, ct.tm_mon + 1, ct.tm_mday, ct.tm_hour, ct.tm_min, ct.tm_sec, ct.tm_msec, ct.tm_usec);
     WUPSConfigItem_SetDisplayName(sysTimeHandle->handle, timeString);
-
-    OSTicksToCalendarTime(NTPGetTime(NTP_SERVER), &ct);
-    snprintf(timeString, 255, "Current NTP Time: %04d-%02d-%02d %02d:%02d:%02d:%04d:%04d\n", ct.tm_year, ct.tm_mon + 1, ct.tm_mday, ct.tm_hour, ct.tm_min, ct.tm_sec, ct.tm_msec, ct.tm_usec);
-    WUPSConfigItem_SetDisplayName(ntpTimeHandle->handle, timeString);
 }
 
 static void settingsThreadMain() {
