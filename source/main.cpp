@@ -33,6 +33,7 @@
 #define OFFSET_MINUTES_CONFIG_ID "offsetMinutes"
 // Seconds between 1900 (NTP epoch) and 2000 (Wii U epoch)
 #define NTP_TIMESTAMP_DELTA 3155673600llu
+#define NTP_SERVER "time.windows.com"
 
 // Important plugin information.
 WUPS_PLUGIN_NAME("Wii U Time Sync");
@@ -185,7 +186,7 @@ OSTime NTPGetTime(const char* hostname)
 }
 
 void updateTime() {
-    OSTime time = NTPGetTime("time.windows.com"); // Connect to the time server.
+    OSTime time = NTPGetTime(NTP_SERVER); // Connect to the time server.
 
     if (time == 0) {
         return; // Probably didn't connect correctly.
