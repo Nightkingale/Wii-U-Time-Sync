@@ -15,9 +15,13 @@
 #include <notifications/notifications.h>
 #include <whb/proc.h>
 #include <wups.h>
+#include <wups/config.h>
+#include <wups/config/WUPSConfigItemMultipleValues.h>
 #include <wups/config/WUPSConfigItemBoolean.h>
 #include <wups/config/WUPSConfigItemStub.h>
 #include <wups/config/WUPSConfigItemIntegerRange.h>
+
+#include "timezones.h"
 
 #include <cstdlib>
 #include <cstdio>
@@ -25,12 +29,11 @@
 #include <thread>
 
 #define SYNCING_ENABLED_CONFIG_ID "enabledSync"
-#define DST_ENABLED_CONFIG_ID "enabledDST"
 #define NOTIFY_ENABLED_CONFIG_ID "enabledNotify"
-#define OFFSET_HOURS_CONFIG_ID "offsetHours"
-#define OFFSET_MINUTES_CONFIG_ID "offsetMinutes"
+#define TIMEZONE_CONFIG_ID "timezone"
 // Seconds between 1900 (NTP epoch) and 2000 (Wii U epoch)
 #define NTP_TIMESTAMP_DELTA 3155673600llu
+#define DEFAULT_TIMEZONE 321
 
 // Important plugin information.
 WUPS_PLUGIN_NAME("Wii U Time Sync");
@@ -43,10 +46,8 @@ WUPS_USE_WUT_DEVOPTAB();
 WUPS_USE_STORAGE("Wii U Time Sync");
 
 bool enabledSync = false;
-bool enabledDST = false;
 bool enabledNotify = true;
-int offsetHours = 0;
-int offsetMinutes = 0;
+static int32_t timezoneOffset;
 
 // From https://github.com/lettier/ntpclient/blob/master/source/c/main.c
 typedef struct
@@ -155,6 +156,9 @@ OSTime NTPGetTime(const char* hostname)
     packet.txTm_s = ntohl(packet.txTm_s); // Time-stamp seconds.
     packet.txTm_f = ntohl(packet.txTm_f); // Time-stamp fraction of a second.
 
+    // Convert timezone
+    packet.txTm_s += timezoneOffset;
+
     OSTime tick = 0;
     // Convert seconds to ticks and adjust timestamp
     tick += OSSecondsToTicks(packet.txTm_s - NTP_TIMESTAMP_DELTA);
@@ -170,18 +174,6 @@ void updateTime() {
         return; // Probably didn't connect correctly.
     }
 
-    if (offsetHours < 0) {
-        time -= OSSecondsToTicks(abs(offsetHours) * 60 * 60);
-    } else {
-        time += OSSecondsToTicks(offsetHours * 60 * 60);
-    }
-
-    if (enabledDST) {
-        time += OSSecondsToTicks(60 * 60); // DST adds an hour.
-    }
-
-    time += OSSecondsToTicks(offsetMinutes * 60);
-
     OSTime currentTime = OSGetTime();
     int timeDifference = abs(time - currentTime);
 
@@ -196,37 +188,49 @@ void updateTime() {
     }
 }
 
+static void timezoneChanged(ConfigItemMultipleValues *item, uint32_t index) {
+    // Set environment variable
+    setenv("TZ", timezonesPOSIX[index].valueName, 1);
+    // Let newlib process it
+    tzset();
+    // Get the result
+    timezoneOffset = -_timezone;
+    if (_daylight) {
+        timezoneOffset += 3600;
+    }
+
+    // Save to config
+    WUPS_StoreInt(nullptr, TIMEZONE_CONFIG_ID, index);
+
+    // Update time
+    if (enabledSync) {
+        updateTime();
+    }
+}
+
 INITIALIZE_PLUGIN() {
     WUPSStorageError storageRes = WUPS_OpenStorage();
+    int32_t i = 0;
     // Check if the plugin's settings have been saved before.
     if (storageRes == WUPS_STORAGE_ERROR_SUCCESS) {
         if ((storageRes = WUPS_GetBool(nullptr, SYNCING_ENABLED_CONFIG_ID, &enabledSync)) == WUPS_STORAGE_ERROR_NOT_FOUND) {
             WUPS_StoreBool(nullptr, SYNCING_ENABLED_CONFIG_ID, enabledSync);
         }
 
-        if ((storageRes = WUPS_GetBool(nullptr, DST_ENABLED_CONFIG_ID, &enabledDST)) == WUPS_STORAGE_ERROR_NOT_FOUND) {
-            WUPS_StoreBool(nullptr, DST_ENABLED_CONFIG_ID, enabledDST);
-        }
-
         if ((storageRes = WUPS_GetBool(nullptr, NOTIFY_ENABLED_CONFIG_ID, &enabledNotify)) == WUPS_STORAGE_ERROR_NOT_FOUND) {
             WUPS_StoreBool(nullptr, NOTIFY_ENABLED_CONFIG_ID, enabledNotify);
         }
 
-        if ((storageRes = WUPS_GetInt(nullptr, OFFSET_HOURS_CONFIG_ID, &offsetHours)) == WUPS_STORAGE_ERROR_NOT_FOUND) {
-            WUPS_StoreInt(nullptr, OFFSET_HOURS_CONFIG_ID, offsetHours);
-        }
-
-        if ((storageRes = WUPS_GetInt(nullptr, OFFSET_MINUTES_CONFIG_ID, &offsetMinutes)) == WUPS_STORAGE_ERROR_NOT_FOUND) {
-            WUPS_StoreInt(nullptr, OFFSET_MINUTES_CONFIG_ID, offsetMinutes);
+        if ((storageRes = WUPS_GetInt(nullptr, TIMEZONE_CONFIG_ID, &i)) == WUPS_STORAGE_ERROR_NOT_FOUND) {
+            i = DEFAULT_TIMEZONE;
         }
 
         NotificationModule_InitLibrary(); // Set up for notifications.
         WUPS_CloseStorage(); // Close the storage.
     }
 
-    if (enabledSync) {
-        updateTime(); // Update time when plugin is loaded.
-    }
+    // Set timezone
+    timezoneChanged(nullptr, i);
 }
 
 void syncingEnabled(ConfigItemBoolean *item, bool value)
@@ -236,28 +240,10 @@ void syncingEnabled(ConfigItemBoolean *item, bool value)
     enabledSync = value;
 }
 
-void savingsEnabled(ConfigItemBoolean *item, bool value)
-{
-    WUPS_StoreBool(nullptr, DST_ENABLED_CONFIG_ID, value);
-    enabledDST = value;
-}
-
 void notifyEnabled(ConfigItemBoolean *item, bool value)
 {
     WUPS_StoreBool(nullptr, NOTIFY_ENABLED_CONFIG_ID, value);
     enabledNotify = value;
-}
-
-void onHourOffsetChanged(ConfigItemIntegerRange *item, int32_t offset)
-{
-    WUPS_StoreInt(nullptr, OFFSET_HOURS_CONFIG_ID, offset);
-    offsetHours = offset;
-}
-
-void onMinuteOffsetChanged(ConfigItemIntegerRange *item, int32_t offset)
-{
-    WUPS_StoreInt(nullptr, OFFSET_MINUTES_CONFIG_ID, offset);
-    offsetMinutes = offset;
 }
 
 WUPS_GET_CONFIG() {
@@ -274,10 +260,8 @@ WUPS_GET_CONFIG() {
     WUPSConfig_AddCategoryByNameHandled(settings, "Preview Time", &preview);
 
     WUPSConfigItemBoolean_AddToCategoryHandled(settings, config, "enabledSync", "Syncing Enabled", enabledSync, &syncingEnabled);
-    WUPSConfigItemBoolean_AddToCategoryHandled(settings, config, "enabledDST", "Daylight Savings", enabledDST, &savingsEnabled);
+    WUPSConfigItemMultipleValues_AddToCategoryHandled(settings, config, TIMEZONE_CONFIG_ID, "Timezone", 0, timezonesReadable, sizeof(timezonesReadable) / sizeof(timezonesReadable[0]), &timezoneChanged);
     WUPSConfigItemBoolean_AddToCategoryHandled(settings, config, "enabledNotify", "Receive Notifications", enabledNotify, &notifyEnabled);
-    WUPSConfigItemIntegerRange_AddToCategoryHandled(settings, config, "offsetHours", "Time Offset (hours)", offsetHours, -12, 14, &onHourOffsetChanged);
-    WUPSConfigItemIntegerRange_AddToCategoryHandled(settings, config, "offsetMinutes", "Time Offset (minutes)", offsetMinutes, 0, 59, &onMinuteOffsetChanged);
 
     OSCalendarTime ct;
     OSTicksToCalendarTime(OSGetTime(), &ct);
