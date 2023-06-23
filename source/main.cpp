@@ -19,6 +19,8 @@
 #include <wups/config/WUPSConfigItemStub.h>
 #include <wups/config/WUPSConfigItemIntegerRange.h>
 
+#include "ConfigItemTime.h"
+
 #include <cstdlib>
 #include <cstdio>
 #include <cstring>
@@ -47,6 +49,11 @@ bool enabledDST = false;
 bool enabledNotify = true;
 int offsetHours = 0;
 int offsetMinutes = 0;
+
+static ConfigItemTime *sysTimeHandle;
+static ConfigItemTime *ntpTimeHandle;
+static std::thread *settingsThread;
+static volatile bool settingsThreadActive;
 
 // From https://github.com/lettier/ntpclient/blob/master/source/c/main.c
 typedef struct
@@ -160,16 +167,8 @@ OSTime NTPGetTime(const char* hostname)
     tick += OSSecondsToTicks(packet.txTm_s - NTP_TIMESTAMP_DELTA);
     // Convert fraction to ticks
     tick += OSNanosecondsToTicks((packet.txTm_f * 1000000000llu) >> 32);
-    return tick;
-}
 
-void updateTime() {
-    OSTime time = NTPGetTime("time.windows.com"); // Connect to the time server.
-
-    if (time == 0) {
-        return; // Probably didn't connect correctly.
-    }
-
+    // Add configured offsets
     if (offsetHours < 0) {
         time -= OSSecondsToTicks(abs(offsetHours) * 60 * 60);
     } else {
@@ -181,6 +180,16 @@ void updateTime() {
     }
 
     time += OSSecondsToTicks(offsetMinutes * 60);
+
+    return tick;
+}
+
+void updateTime() {
+    OSTime time = NTPGetTime("time.windows.com"); // Connect to the time server.
+
+    if (time == 0) {
+        return; // Probably didn't connect correctly.
+    }
 
     OSTime currentTime = OSGetTime();
     int timeDifference = abs(time - currentTime);
@@ -260,6 +269,26 @@ void onMinuteOffsetChanged(ConfigItemIntegerRange *item, int32_t offset)
     offsetMinutes = offset;
 }
 
+static void setTimeInSettings() {
+    OSCalendarTime ct;
+    char timeString[256];
+
+    OSTicksToCalendarTime(OSGetTime(), &ct);
+    snprintf(timeString, 255, "Current SYS Time: %04d-%02d-%02d %02d:%02d:%02d:%04d:%04d\n", ct.tm_year, ct.tm_mon + 1, ct.tm_mday, ct.tm_hour, ct.tm_min, ct.tm_sec, ct.tm_msec, ct.tm_usec);
+    WUPSConfigItem_SetDisplayName(sysTimeHandle->handle, timeString);
+
+    OSTicksToCalendarTime(NTPGetTime(NTP_SERVER), &ct);
+    snprintf(timeString, 255, "Current NTP Time: %04d-%02d-%02d %02d:%02d:%02d:%04d:%04d\n", ct.tm_year, ct.tm_mon + 1, ct.tm_mday, ct.tm_hour, ct.tm_min, ct.tm_sec, ct.tm_msec, ct.tm_usec);
+    WUPSConfigItem_SetDisplayName(ntpTimeHandle->handle, timeString);
+}
+
+static void settingsThreadMain() {
+    while(settingsThreadActive) {
+        setTimeInSettings();
+        sleep(1);
+    }
+}
+
 WUPS_GET_CONFIG() {
     if (WUPS_OpenStorage() != WUPS_STORAGE_ERROR_SUCCESS) {
         return 0;
@@ -279,11 +308,10 @@ WUPS_GET_CONFIG() {
     WUPSConfigItemIntegerRange_AddToCategoryHandled(settings, config, "offsetHours", "Time Offset (hours)", offsetHours, -12, 14, &onHourOffsetChanged);
     WUPSConfigItemIntegerRange_AddToCategoryHandled(settings, config, "offsetMinutes", "Time Offset (minutes)", offsetMinutes, 0, 59, &onMinuteOffsetChanged);
 
-    OSCalendarTime ct;
-    OSTicksToCalendarTime(OSGetTime(), &ct);
-    char timeString[256];
-    snprintf(timeString, 255, "Current Time: %04d-%02d-%02d %02d:%02d:%02d:%04d:%04d\n", ct.tm_year, ct.tm_mon + 1, ct.tm_mday, ct.tm_hour, ct.tm_min, ct.tm_sec, ct.tm_msec, ct.tm_usec);
-    WUPSConfigItemStub_AddToCategoryHandled(settings, preview, "time", timeString);
+    sysTimeHandle = WUPSConfigItemTime_AddToCategoryHandled(settings, preview, "sysTime", "Current SYS Time: Loading...");
+    ntpTimeHandle = WUPSConfigItemTime_AddToCategoryHandled(settings, preview, "ntpTime", "Current NTP Time: Loading...");
+    settingsThreadActive = true;
+    settingsThread = new std::thread(settingsThreadMain);
 
     return settings;
 }
@@ -294,5 +322,8 @@ WUPS_CONFIG_CLOSED() {
         updateTimeThread.detach(); // Update time when settings are closed.
     }
     
+    settingsThreadActive = false;
+    settingsThread->join();
+    delete settingsThread;
     WUPS_CloseStorage(); // Save all changes.
 }
