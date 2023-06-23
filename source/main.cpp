@@ -102,8 +102,8 @@ OSTime NTPGetTime(const char* hostname)
     ntp_packet packet;
     memset(&packet, 0, sizeof(packet));
 
-    // Set the first byte's bits to 00,011,011 for li = 0, vn = 3, and mode = 3. The rest will be left set to zero.
-    packet.li_vn_mode = 0x1b;
+    // Set the first byte's bits to 00,001,011 for li = 0, vn = 1, and mode = 3. The rest will be left set to zero.
+    packet.li_vn_mode = 0x0b;
 
     // Create a socket
     int sockfd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
