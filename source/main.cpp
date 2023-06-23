@@ -31,6 +31,7 @@
 #define OFFSET_MINUTES_CONFIG_ID "offsetMinutes"
 // Seconds between 1900 (NTP epoch) and 2000 (Wii U epoch)
 #define NTP_TIMESTAMP_DELTA 3155673600llu
+#define LI_UNSYNC 0xc0
 
 // Important plugin information.
 WUPS_PLUGIN_NAME("Wii U Time Sync");
@@ -148,6 +149,11 @@ OSTime NTPGetTime(const char* hostname)
 
     // Close the socket
     close(sockfd);
+
+    // Basic validity check:
+    if ((packet.li_vn_mode & LI_UNSYNC) == LI_UNSYNC || packet.stratum == 0 || !(packet.txTm_s | packet.txTm_f)) {
+        return 0;
+    }
 
     // These two fields contain the time-stamp seconds as the packet left the NTP server.
     // The number of seconds correspond to the seconds passed since 1900.
