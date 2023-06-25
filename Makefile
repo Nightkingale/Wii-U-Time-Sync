@@ -28,7 +28,8 @@ INCLUDES	:=	source
 #-------------------------------------------------------------------------------
 # options for code generation
 #-------------------------------------------------------------------------------
-CFLAGS	:=	-Wall -Ofast -fipa-pta -pipe -ffunction-sections \
+CFLAGS	:=	-Wall -Wextra -Wundef -Wshadow -Wpointer-arith -Wcast-align \
+			-Ofast -fipa-pta -pipe -ffunction-sections \
 			$(MACHDEP)
 
 CFLAGS	+=	$(INCLUDE) -D__WIIU__ -D__WUT__ -D__WUPS__ 
