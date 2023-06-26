@@ -231,6 +231,7 @@ INITIALIZE_PLUGIN() {
 
 void syncingEnabled(ConfigItemBoolean *item, bool value)
 {
+    (void)item;
     // If false, bro is literally a time traveler!
     WUPS_StoreBool(nullptr, SYNCING_ENABLED_CONFIG_ID, value);
     enabledSync = value;
@@ -238,24 +239,28 @@ void syncingEnabled(ConfigItemBoolean *item, bool value)
 
 void savingsEnabled(ConfigItemBoolean *item, bool value)
 {
+    (void)item;
     WUPS_StoreBool(nullptr, DST_ENABLED_CONFIG_ID, value);
     enabledDST = value;
 }
 
 void notifyEnabled(ConfigItemBoolean *item, bool value)
 {
+    (void)item;
     WUPS_StoreBool(nullptr, NOTIFY_ENABLED_CONFIG_ID, value);
     enabledNotify = value;
 }
 
 void onHourOffsetChanged(ConfigItemIntegerRange *item, int32_t offset)
 {
+    (void)item;
     WUPS_StoreInt(nullptr, OFFSET_HOURS_CONFIG_ID, offset);
     offsetHours = offset;
 }
 
 void onMinuteOffsetChanged(ConfigItemIntegerRange *item, int32_t offset)
 {
+    (void)item;
     WUPS_StoreInt(nullptr, OFFSET_MINUTES_CONFIG_ID, offset);
     offsetMinutes = offset;
 }
