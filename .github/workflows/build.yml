@@ -9,8 +9,8 @@ jobs:
     - uses: actions/checkout@v3
     - name: Build Binary
       run: |
-        docker build -t plugin_builder .
-        docker run --rm -v ${PWD}:/project plugin_builder make
+        docker build -t builder .
+        docker run --rm -v ${PWD}:/project builder make
     - uses: actions/upload-artifact@v3
       with:
        name: Wii_U_Time_Sync.wps
