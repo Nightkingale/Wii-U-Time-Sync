@@ -164,11 +164,26 @@ OSTime NTPGetTime(const char* hostname)
 }
 
 void updateTime() {
+    uint64_t roundtripStart = 0;
+    uint64_t roundtripEnd = 0;
+
+    // Get the time from the server.
+    roundtripStart = OSGetTime();
     OSTime time = NTPGetTime("time.windows.com"); // Connect to the time server.
+    roundtripEnd = OSGetTime();
 
     if (time == 0) {
         return; // Probably didn't connect correctly.
     }
+
+    // Calculate the roundtrip time.
+    uint64_t roundtrip = roundtripEnd - roundtripStart;
+
+    // Calculate the time it took to get the time from the server.
+    uint64_t timeTook = roundtrip / 2;
+
+    // Subtract the time it took to get the time from the server.
+    time -= OSMillisecondsToTicks(timeTook);
 
     if (offsetHours < 0) {
         time -= OSSecondsToTicks(abs(offsetHours) * 60 * 60);
