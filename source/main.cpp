@@ -169,7 +169,7 @@ void updateTime() {
 
     // Get the time from the server.
     roundtripStart = OSGetTime();
-    OSTime time = NTPGetTime("time.windows.com"); // Connect to the time server.
+    OSTime time = NTPGetTime("pool.ntp.org"); // Connect to the time server.
     roundtripEnd = OSGetTime();
 
     if (time == 0) {
