@@ -183,7 +183,7 @@ void updateTime() {
     uint64_t timeTook = roundtrip / 2;
 
     // Subtract the time it took to get the time from the server.
-    time -= OSMillisecondsToTicks(timeTook);
+    time -= timeTook;
 
     if (offsetHours < 0) {
         time -= OSSecondsToTicks(abs(offsetHours) * 60 * 60);
