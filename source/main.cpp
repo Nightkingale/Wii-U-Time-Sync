@@ -164,11 +164,26 @@ OSTime NTPGetTime(const char* hostname)
 }
 
 void updateTime() {
+    uint64_t roundtripStart = 0;
+    uint64_t roundtripEnd = 0;
+
+    // Get the time from the server.
+    roundtripStart = OSGetTime();
     OSTime time = NTPGetTime("pool.ntp.org"); // Connect to the time server.
+    roundtripEnd = OSGetTime();
 
     if (time == 0) {
         return; // Probably didn't connect correctly.
     }
+
+    // Calculate the roundtrip time.
+    uint64_t roundtrip = roundtripEnd - roundtripStart;
+
+    // Calculate the time it took to get the time from the server.
+    uint64_t timeTook = roundtrip / 2;
+
+    // Subtract the time it took to get the time from the server.
+    time -= timeTook;
 
     if (offsetHours < 0) {
         time -= OSSecondsToTicks(abs(offsetHours) * 60 * 60);
@@ -231,6 +246,7 @@ INITIALIZE_PLUGIN() {
 
 void syncingEnabled(ConfigItemBoolean *item, bool value)
 {
+    (void)item;
     // If false, bro is literally a time traveler!
     WUPS_StoreBool(nullptr, SYNCING_ENABLED_CONFIG_ID, value);
     enabledSync = value;
@@ -238,24 +254,28 @@ void syncingEnabled(ConfigItemBoolean *item, bool value)
 
 void savingsEnabled(ConfigItemBoolean *item, bool value)
 {
+    (void)item;
     WUPS_StoreBool(nullptr, DST_ENABLED_CONFIG_ID, value);
     enabledDST = value;
 }
 
 void notifyEnabled(ConfigItemBoolean *item, bool value)
 {
+    (void)item;
     WUPS_StoreBool(nullptr, NOTIFY_ENABLED_CONFIG_ID, value);
     enabledNotify = value;
 }
 
 void onHourOffsetChanged(ConfigItemIntegerRange *item, int32_t offset)
 {
+    (void)item;
     WUPS_StoreInt(nullptr, OFFSET_HOURS_CONFIG_ID, offset);
     offsetHours = offset;
 }
 
 void onMinuteOffsetChanged(ConfigItemIntegerRange *item, int32_t offset)
 {
+    (void)item;
     WUPS_StoreInt(nullptr, OFFSET_MINUTES_CONFIG_ID, offset);
     offsetMinutes = offset;
 }
