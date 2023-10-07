@@ -59,7 +59,7 @@ using namespace std::literals;
 // Important plugin information.
 WUPS_PLUGIN_NAME(PLUGIN_NAME);
 WUPS_PLUGIN_DESCRIPTION("A plugin that synchronizes a Wii U's clock to the Internet.");
-WUPS_PLUGIN_VERSION("v1.1.0");
+WUPS_PLUGIN_VERSION("v2.0.0");
 WUPS_PLUGIN_AUTHOR("Nightkingale, Daniel K. O.");
 WUPS_PLUGIN_LICENSE("MIT");
 
