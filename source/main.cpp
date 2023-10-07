@@ -587,6 +587,9 @@ void
 update_time()
 try
 {
+    if (!cfg::sync)
+        return;
+        
     progress_guard guard;
 
     cfg::offset = OSSecondsToTicks(cfg::minutes * 60);
