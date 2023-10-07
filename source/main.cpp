@@ -727,8 +727,8 @@ WUPS_GET_CONFIG()
                                                cfg::sync,
                                                [](ConfigItemBoolean*, bool value)
                                                {
-                                                   WUPS_StoreBool(nullptr, CFG_NOTIFY, value);
-                                                   cfg::notify = value;
+                                                   WUPS_StoreBool(nullptr, CFG_SYNC, value);
+                                                   cfg::sync = value;
                                                });
     WUPSConfigItemBoolean_AddToCategoryHandled(settings, config, CFG_NOTIFY,
                                                "Show Notifications",
