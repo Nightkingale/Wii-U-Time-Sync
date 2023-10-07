@@ -71,10 +71,10 @@ namespace cfg {
     int  hours        = 0;
     int  minutes      = 0;
     int  msg_duration = 5;
-    bool notify       = true;
+    bool notify       = false;
     char server[512]  = "pool.ntp.org";
     bool sync         = false;
-    int  tolerance    = 200;
+    int  tolerance    = 250;
 
     OSTime offset = 0;          // combines hours and minutes offsets
 }
