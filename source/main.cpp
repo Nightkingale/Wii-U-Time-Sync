@@ -416,7 +416,7 @@ ntp_query(struct sockaddr_in address)
 {
     socket_guard s{PF_INET, SOCK_DGRAM, IPPROTO_UDP};
     if (s.fd == -1)
-        throw std::runtime_error{"unable to create socket"};
+        throw std::runtime_error{"Unable to create socket!"};
 
     connect(s.fd, reinterpret_cast<struct sockaddr*>(&address), sizeof address);
 
@@ -434,12 +434,12 @@ ntp_query(struct sockaddr_in address)
     if (send(s.fd, &packet, sizeof packet, 0) == -1) {
         int e = errno;
         if (e != ENOMEM)
-            throw std::runtime_error{"unable to send NTP request: "s + errno_to_string(e)};
+            throw std::runtime_error{"Unable to send NTP request: "s + errno_to_string(e)};
         if (++num_send_tries < 4) {
             std::this_thread::sleep_for(100ms);
             goto try_again_send;
         } else
-            throw std::runtime_error{"no resources for send(), too many retries"};
+            throw std::runtime_error{"No resources for send(), too many retries!"};
     }
 
     struct timeval timeout = { 4, 0 };
@@ -462,15 +462,15 @@ ntp_query(struct sockaddr_in address)
             std::this_thread::sleep_for(10ms);
             goto try_again_select;
         } else
-            throw std::runtime_error{"no resources for select(), too many retries"};
+            throw std::runtime_error{"No resources for select(), too many retries!"};
     }
 
 
     if (!FD_ISSET(s.fd, &read_set))
-        throw std::runtime_error{"timeout reached"};
+        throw std::runtime_error{"Timeout reached!"};
 
     if (recv(s.fd, &packet, sizeof packet, 0) < 48)
-        throw std::runtime_error{"invalid NTP response"};
+        throw std::runtime_error{"Invalid NTP response!"};
 
     ntp::timestamp t4 = wiiu_to_ntp(get_utc_time());
 
@@ -555,7 +555,7 @@ get_address_info(const std::optional<std::string>& name,
 
         // sanity check: Wii U only supports IPv4
         if (a->ai_addrlen != sizeof(struct sockaddr_in))
-            throw std::logic_error{"getaddrinfo() returned invalid result"};
+            throw std::logic_error{"getaddrinfo() returned invalid result!"};
 
         addrinfo_result item;
         item.family = a->ai_family;
@@ -642,7 +642,7 @@ try
 
 
     if (corrections.empty()) {
-        report_error("no NTP server could be used");
+        report_error("No NTP server could be used!");
         return;
     }
 
@@ -652,23 +652,23 @@ try
         / corrections.size();
 
     if (std::fabs(avg_correction) * 1000 <= cfg::tolerance) {
-        report_success("tolerating clock drift (correction is only "
-                       + seconds_to_human(avg_correction) + ")"s);
+        report_success("Tolerating clock drift (correction is only "
+                       + seconds_to_human(avg_correction) + ")."s);
         return;
     }
 
     if (cfg::sync) {
         if (!apply_clock_correction(avg_correction)) {
-            report_error("failed to set system clock");
+            report_error("Failed to set system clock!");
             return;
         }
     }
 
     if (cfg::notify)
-        report_success("clock corrected by " + seconds_to_human(avg_correction));
+        report_success("Clock corrected by " + seconds_to_human(avg_correction));
 }
 catch (progress_error&) {
-    report_info("skipping NTP task: already in progress");
+    report_info("Skipping NTP task: already in progress.");
 }
 
 
@@ -739,7 +739,7 @@ WUPS_GET_CONFIG()
                                                    cfg::notify = value;
                                                });
     WUPSConfigItemIntegerRange_AddToCategoryHandled(settings, config, CFG_MSG_DURATION,
-                                                    "Messages Duration (seconds)",
+                                                    "Message Duration (seconds)",
                                                     cfg::msg_duration, 0, 30,
                                                     [](ConfigItemIntegerRange*, int32_t value)
                                                     {
@@ -748,7 +748,7 @@ WUPS_GET_CONFIG()
                                                         cfg::msg_duration = value;
                                                     });
     WUPSConfigItemIntegerRange_AddToCategoryHandled(settings, config, CFG_HOURS,
-                                                    "Hours Offset",
+                                                    "Time Offset (hours)",
                                                     cfg::hours, -12, 14,
                                                     [](ConfigItemIntegerRange*, int32_t value)
                                                     {
@@ -756,7 +756,7 @@ WUPS_GET_CONFIG()
                                                         cfg::hours = value;
                                                     });
     WUPSConfigItemIntegerRange_AddToCategoryHandled(settings, config, CFG_MINUTES,
-                                                    "Minutes Offset",
+                                                    "Time Offset (minutes)",
                                                     cfg::minutes, 0, 59,
                                                     [](ConfigItemIntegerRange*, int32_t value)
                                                     {
@@ -775,11 +775,13 @@ WUPS_GET_CONFIG()
                                                     });
 
     // show current NTP server address, no way to change it.
-    std::string server = "NTP servers: "s + cfg::server;
+    std::string server = "NTP Servers: "s + cfg::server;
     WUPSConfigItemStub_AddToCategoryHandled(settings, config, CFG_SERVER, server.c_str());
 
+    // Prepare the time to be shown for the user.
+    std::string time = "Current Time: "s + format_wiiu_time(OSGetTime());
     WUPSConfigItemStub_AddToCategoryHandled(settings, preview, "time",
-                                            format_wiiu_time(OSGetTime()).c_str());
+                                            time.c_str());
 
     return settings;
 }
