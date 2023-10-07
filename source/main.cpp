@@ -738,15 +738,6 @@ WUPS_GET_CONFIG()
                                                    WUPS_StoreBool(nullptr, CFG_NOTIFY, value);
                                                    cfg::notify = value;
                                                });
-    WUPSConfigItemIntegerRange_AddToCategoryHandled(settings, config, CFG_MSG_DURATION,
-                                                    "Message Duration (seconds)",
-                                                    cfg::msg_duration, 0, 30,
-                                                    [](ConfigItemIntegerRange*, int32_t value)
-                                                    {
-                                                        WUPS_StoreInt(nullptr, CFG_MSG_DURATION,
-                                                                      value);
-                                                        cfg::msg_duration = value;
-                                                    });
     WUPSConfigItemIntegerRange_AddToCategoryHandled(settings, config, CFG_HOURS,
                                                     "Time Offset (hours)",
                                                     cfg::hours, -12, 14,
@@ -763,6 +754,15 @@ WUPS_GET_CONFIG()
                                                         WUPS_StoreInt(nullptr, CFG_MINUTES,
                                                                       value);
                                                         cfg::minutes = value;
+                                                    });
+    WUPSConfigItemIntegerRange_AddToCategoryHandled(settings, config, CFG_MSG_DURATION,
+                                                    "Message Duration (seconds)",
+                                                    cfg::msg_duration, 0, 30,
+                                                    [](ConfigItemIntegerRange*, int32_t value)
+                                                    {
+                                                        WUPS_StoreInt(nullptr, CFG_MSG_DURATION,
+                                                                      value);
+                                                        cfg::msg_duration = value;
                                                     });
     WUPSConfigItemIntegerRange_AddToCategoryHandled(settings, config, CFG_TOLERANCE,
                                                     "Tolerance (milliseconds)",
