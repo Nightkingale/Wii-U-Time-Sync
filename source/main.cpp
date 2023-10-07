@@ -637,7 +637,7 @@ try
             corrections.push_back(correction);
             report_info(to_string(address)
                         + ": correction = "s + seconds_to_human(correction)
-                        + ",  latency = "s + seconds_to_human(latency));
+                        + ", latency = "s + seconds_to_human(latency) + "."s);
         }
         catch (std::exception& e) {
             report_error(to_string(address) + ": "s + e.what());
