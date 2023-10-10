@@ -56,3 +56,9 @@ dkms.conf
 *.lst
 *.rpx
 *.wps
+*.json
+*.zip
+compile_flags.txt
+
+# Temporary files
+*~
