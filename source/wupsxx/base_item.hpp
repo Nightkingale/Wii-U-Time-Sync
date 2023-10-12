@@ -31,7 +31,7 @@ namespace wups {
 
         virtual int get_current_value_selected_display(char* buf, std::size_t size) const;
 
-        virtual void on_selected(bool is_selected) const;
+        virtual void on_selected(bool is_selected);
 
         virtual void restore();
 

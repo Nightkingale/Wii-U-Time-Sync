@@ -35,7 +35,7 @@ namespace wups {
         {
             if (!ctx)
                 return;
-            auto item = reinterpret_cast<const base_item*>(ctx);
+            auto item = reinterpret_cast<base_item*>(ctx);
             item->on_selected(is_selected);
         };
 
@@ -116,7 +116,6 @@ namespace wups {
 
     void
     base_item::on_selected(bool)
-        const
     {}
 
 

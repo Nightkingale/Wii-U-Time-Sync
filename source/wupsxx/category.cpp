@@ -35,4 +35,18 @@ namespace wups {
         item.release(); // WUPS now owns this item
     }
 
+
+    void
+    category::add(base_item* item)
+    {
+        if (!item)
+            throw std::logic_error{"cannot add null item to category"};
+        if (!item->handle)
+            throw std::logic_error{"cannot add null item handle to category"};
+
+        if (WUPSConfigCategory_AddItem(handle, item->handle) < 0)
+            throw std::runtime_error{"cannot add item to category"};
+    }
+
+
 } // namespace wups

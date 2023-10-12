@@ -303,7 +303,7 @@ seconds_to_human(double s)
     char buf[64];
 
     if (std::fabs(s) < 2) // less than 2 seconds
-        std::snprintf(buf, sizeof buf, "%.3f ms", 1000 * s);
+        std::snprintf(buf, sizeof buf, "%.1f ms", 1000 * s);
     else if (std::fabs(s) < 2 * 60) // less than 2 minutes
         std::snprintf(buf, sizeof buf, "%.1f s", s);
     else if (std::fabs(s) < 2 * 60 * 60) // less than 2 hours
@@ -347,7 +347,7 @@ split(const std::string& input,
 
     std::vector<string> result;
 
-    string::size_type start = 0;
+    string::size_type start = input.find_first_not_of(separators);
     while (start != string::npos) {
         auto finish = input.find_first_of(separators, start);
         result.push_back(input.substr(start, finish - start));
@@ -708,7 +708,7 @@ update_time()
 template<typename T>
 void
 load_or_init(const std::string& key,
-                T& variable)
+             T& variable)
 {
     auto val = wups::load<T>(key);
     if (!val)
@@ -720,9 +720,8 @@ load_or_init(const std::string& key,
 
 INITIALIZE_PLUGIN()
 {
-    WUPSStorageError storageRes = WUPS_OpenStorage();
     // Check if the plugin's settings have been saved before.
-    if (storageRes == WUPS_STORAGE_ERROR_SUCCESS) {
+    if (WUPS_OpenStorage() == WUPS_STORAGE_ERROR_SUCCESS) {
 
         load_or_init(CFG_HOURS,        cfg::hours);
         load_or_init(CFG_MINUTES,      cfg::minutes);
@@ -742,18 +741,72 @@ INITIALIZE_PLUGIN()
 }
 
 
+struct statistics {
+    double min = 0;
+    double max = 0;
+    double avg = 0;
+};
+
+
+statistics
+get_statistics(const std::vector<double>& values)
+{
+    statistics result;
+    double total = 0;
+
+    if (values.empty())
+        return result;
+
+    result.min = result.max = values.front();
+    for (auto x : values) {
+        result.min = std::fmin(result.min, x);
+        result.max = std::fmax(result.max, x);
+        total += x;
+    }
+
+    result.avg = total / values.size();
+
+    return result;
+}
+
+
 struct preview_item : wups::text_item {
+
+    struct server_info {
+        wups::text_item* name_item = nullptr;
+        wups::text_item* corr_item = nullptr;
+        wups::text_item* late_item = nullptr;
+    };
 
     wups::category* category;
 
-    std::map<std::string, wups::text_item*> server_items;
-    std::map<struct sockaddr_in, wups::text_item*> address_items;
-
+    std::map<std::string, server_info> server_infos;
 
     preview_item(wups::category* cat) :
-        wups::text_item{"", "Clock", "Press A"},
+        wups::text_item{"", "Clock (\ue000 to refresh)"},
         category{cat}
-    {}
+    {
+        category->add(this);
+
+        std::vector<std::string> servers = split(cfg::server, " \t,;");
+        for (const auto& server : servers) {
+            if (!server_infos.contains(server)) {
+                auto& si = server_infos[server];
+
+                auto name_item = std::make_unique<wups::text_item>("", server + ":");
+                si.name_item = name_item.get();
+                category->add(std::move(name_item));
+
+                auto corr_item = std::make_unique<wups::text_item>("", "  Correction:");
+                si.corr_item = corr_item.get();
+                category->add(std::move(corr_item));
+
+                auto late_item = std::make_unique<wups::text_item>("", "  Latency:");
+                si.late_item = late_item.get();
+                category->add(std::move(late_item));
+            }
+        }
+    }
 
 
     void
@@ -762,92 +815,93 @@ struct preview_item : wups::text_item {
     {
         wups::text_item::on_button_pressed(buttons);
 
-        if (buttons & WUPS_CONFIG_BUTTON_A) {
-            try {
-                using std::make_unique;
+        if (buttons & WUPS_CONFIG_BUTTON_A)
+            run_preview();
+    }
 
-                update_offset();
 
-                for (auto& [key, value] : server_items)
-                    value->text.clear();
+    void
+    run_preview()
+    try {
 
-                for (auto& [key, value] : address_items)
-                    value->text.clear();
+        using std::make_unique;
 
-                std::vector<std::string> servers = split(cfg::server, " \t,;");
+        update_offset();
 
-                // first, ensure each server has a text_item
-                for (const auto& server : servers)
-                    if (!server_items[server]) {
-                        auto item = make_unique<wups::text_item>("", server);
-                        server_items[server] = item.get();
-                        category->add(std::move(item));
-                    }
-
-                addrinfo_query query = {
-                    .family = AF_INET,
-                    .socktype = SOCK_DGRAM,
-                    .protocol = IPPROTO_UDP
-                };
-
-                std::set<struct sockaddr_in> addresses;
-                for (const auto& server : servers) {
-                    auto item = server_items.at(server);
-                    try {
-                        auto infos = get_address_info(server, "123", query);
-
-                        item->text = std::to_string(infos.size()) + " IP "
-                            + (infos.size() > 1 ? "addresses" : "address");
-
-                        for (auto info : infos)
-                            addresses.insert(info.address);
-                    }
-                    catch (std::exception& e) {
-                        item->text = e.what();
-                    }
-                }
-
-                std::vector<double> corrections;
-                for (auto addr : addresses) {
-                    // ensure each address has a text_item
-                    if (!address_items[addr]) {
-                        auto item = make_unique<wups::text_item>("", to_string(addr));
-                        address_items[addr] = item.get();
-                        category->add(std::move(item));
-                    }
-                    auto item = address_items.at(addr);
-
-                    try {
-                        auto [correction, latency] = ntp_query(addr);
-                        item->text += "correction = " + seconds_to_human(correction)
-                            + ", latency = " + seconds_to_human(latency);
-
-                        corrections.push_back(correction);
-                    }
-                    catch (std::exception& e) {
-                        item->text = e.what();
-                    }
-                }
-
-                text = format_wiiu_time(OSGetTime());
-
-                if (corrections.empty())
-                    text += ": no NTP server could be used.";
-                else {
-                    double avg_correction = std::accumulate(corrections.begin(),
-                                                            corrections.end(),
-                                                            0.0)
-                        / corrections.size();
-                    text += " is off by "s + seconds_to_human(avg_correction);
-                }
-
-            }
-            catch (std::exception& e) {
-                text = "Error: "s + e.what();
-            }
-
+        for (auto& [key, value] : server_infos) {
+            value.name_item->text.clear();
+            value.corr_item->text.clear();
+            value.late_item->text.clear();
         }
 
+        std::vector<std::string> servers = split(cfg::server, " \t,;");
+
+        addrinfo_query query = {
+            .family = AF_INET,
+            .socktype = SOCK_DGRAM,
+            .protocol = IPPROTO_UDP
+        };
+
+        double total = 0;
+        unsigned num_values = 0;
+
+        for (const auto& server : servers) {
+            auto& si = server_infos.at(server);
+            try {
+                auto infos = get_address_info(server, "123", query);
+
+                si.name_item->text = std::to_string(infos.size())
+                    + (infos.size() > 1 ? " addresses."s : " address."s);
+
+                std::vector<double> server_corrections;
+                std::vector<double> server_latencies;
+                unsigned errors = 0;
+
+                for (const auto& info : infos) {
+                    try {
+                        auto [correction, latency] = ntp_query(info.address);
+                        server_corrections.push_back(correction);
+                        server_latencies.push_back(latency);
+                        total += correction;
+                        ++num_values;
+                    }
+                    catch (std::exception& e) {
+                        ++errors;
+                    }
+                }
+
+                if (errors)
+                    si.name_item->text += " "s + std::to_string(errors)
+                        + (errors > 1 ? " errors."s : "error."s);
+                if (!server_corrections.empty()) {
+                    auto corr_stats = get_statistics(server_corrections);
+                    si.corr_item->text = "min = "s + seconds_to_human(corr_stats.min)
+                        + ", max = "s + seconds_to_human(corr_stats.max)
+                        + ", avg = "s + seconds_to_human(corr_stats.avg);
+                    auto late_stats = get_statistics(server_latencies);
+                    si.late_item->text = "min = "s + seconds_to_human(late_stats.min)
+                        + ", max = "s + seconds_to_human(late_stats.max)
+                        + ", avg = "s + seconds_to_human(late_stats.avg);
+                } else {
+                    si.corr_item->text = "No data.";
+                    si.late_item->text = "No data.";
+                }
+            }
+            catch (std::exception& e) {
+                si.name_item->text = e.what();
+            }
+        }
+
+        text = format_wiiu_time(OSGetTime());
+
+        if (num_values) {
+            double avg = total / num_values;
+            text += ", needs "s + seconds_to_human(avg);
+        }
+
+    }
+    catch (std::exception& e) {
+        text = "Error: "s + e.what();
     }
 
 };
@@ -863,7 +917,6 @@ WUPS_GET_CONFIG()
     try {
 
         auto config = make_unique<wups::category>("Configuration");
-        auto preview = make_unique<wups::category>("Preview");
 
         config->add(make_unique<wups::bool_item>(CFG_SYNC,
                                                  "Syncing Enabled",
@@ -886,7 +939,7 @@ WUPS_GET_CONFIG()
                                                 cfg::minutes, 0, 59));
 
         config->add(make_unique<wups::int_item>(CFG_TOLERANCE,
-                                                "Tolerance (milliseconds, L/R for +/- 50)",
+                                                "Tolerance (milliseconds, \ue083/\ue084 for +/- 50)",
                                                 cfg::tolerance, 0, 5000));
 
         // show current NTP server address, no way to change it.
@@ -894,7 +947,9 @@ WUPS_GET_CONFIG()
                                                  "NTP servers",
                                                  cfg::server));
 
-        preview->add(make_unique<preview_item>(preview.get()));
+        auto preview = make_unique<wups::category>("Preview");
+        // The preview_item adds itself to the category already.
+        make_unique<preview_item>(preview.get()).release();
 
         auto root = make_unique<wups::config>(PLUGIN_NAME);
         root->add(std::move(config));

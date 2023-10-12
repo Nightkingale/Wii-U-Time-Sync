@@ -10,6 +10,8 @@ namespace wups {
     struct text_item : base_item {
 
         std::string text;
+        int max_width = 50;
+        int start = 0;
 
         text_item(const std::string& key = "",
                   const std::string& name = "",
@@ -17,6 +19,9 @@ namespace wups {
 
         virtual int get_current_value_display(char* buf, std::size_t size) const override;
 
+        virtual void on_selected(bool is_selected) override;
+
+        virtual void on_button_pressed(WUPSConfigButtons buttons) override;
     };
 
 } // namespace wups

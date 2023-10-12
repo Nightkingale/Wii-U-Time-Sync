@@ -25,6 +25,8 @@ namespace wups {
 
         void add(std::unique_ptr<base_item>&& item);
 
+        void add(base_item* item);
+
     };
 
 } // namespace wups
