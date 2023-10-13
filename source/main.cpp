@@ -3,6 +3,7 @@
 // standard headers
 #include <atomic>
 #include <bit>
+#include <chrono>
 #include <cmath>
 #include <cstdint>
 #include <cstdio>
@@ -10,6 +11,7 @@
 #include <cstring>
 #include <functional>           // invoke()
 #include <future>
+#include <map>
 #include <memory>               // unique_ptr<>
 #include <numeric>              // accumulate()
 #include <optional>
@@ -42,6 +44,13 @@
 
 #include "ntp.hpp"
 
+#include "wupsxx/bool_item.hpp"
+#include "wupsxx/category.hpp"
+#include "wupsxx/config.hpp"
+#include "wupsxx/int_item.hpp"
+#include "wupsxx/storage.hpp"
+#include "wupsxx/text_item.hpp"
+
 
 using namespace std::literals;
 
@@ -68,60 +77,47 @@ WUPS_USE_STORAGE(PLUGIN_NAME);
 
 
 namespace cfg {
-    int  hours        = 0;
-    int  minutes      = 0;
-    int  msg_duration = 5;
-    bool notify       = false;
-    char server[512]  = "pool.ntp.org";
-    bool sync         = false;
-    int  tolerance    = 250;
+    int         hours        = 0;
+    int         minutes      = 0;
+    int         msg_duration = 5;
+    bool        notify       = false;
+    std::string server       = "pool.ntp.org";
+    bool        sync         = false;
+    int         tolerance    = 250;
 
     OSTime offset = 0;          // combines hours and minutes offsets
 }
 
 
-std::atomic<bool> in_progress = false;
-
-
-// RAII type that handles the in_progress flag.
-
-struct progress_error : std::runtime_error {
-    progress_error() :
-        std::runtime_error{"progress_error"}
-    {}
-};
-
-struct progress_guard {
-    progress_guard()
-    {
-        bool expected_progress = false;
-        if (!in_progress.compare_exchange_strong(expected_progress, true))
-            throw progress_error{};
-    }
-
-    ~progress_guard()
-    {
-        in_progress = false;
-    }
-};
-
-
 // The code below implements a wrapper for std::async() that respects a thread limit.
 
-std::counting_semaphore async_limit{6};
+enum class guard_type {
+    acquire_and_release,
+    only_acquire,
+    only_release
+};
 
 
 template<typename Sem>
-struct semaphore_releaser {
-    Sem& s;
+struct semaphore_guard {
+    Sem& sem;
+    guard_type type;
 
-    semaphore_releaser(Sem& s) :
-        s(s)
-    {}
-
-    ~semaphore_releaser()
+    semaphore_guard(Sem& s,
+                    guard_type t = guard_type::acquire_and_release) :
+        sem(s),
+        type{t}
     {
-        s.release();
+        if (type == guard_type::acquire_and_release ||
+            type == guard_type::only_acquire)
+            sem.acquire();
+    }
+
+    ~semaphore_guard()
+    {
+        if (type == guard_type::acquire_and_release ||
+            type == guard_type::only_release)
+            sem.release();
     }
 };
 
@@ -133,23 +129,25 @@ std::future<typename std::invoke_result_t<std::decay_t<Func>, std::decay_t<Args>
 limited_async(Func&& func,
               Args&&... args)
 {
-    async_limit.acquire();
+    static std::counting_semaphore async_limit{6};
 
-    try {
-        return std::async(std::launch::async,
-                          [](auto&& f, auto&&... a) -> auto
-                          {
-                              semaphore_releaser guard{async_limit};
-                              return std::invoke(std::forward<decltype(f)>(f),
-                                                 std::forward<decltype(a)>(a)...);
-                          },
-                          std::forward<Func>(func),
-                          std::forward<Args>(args)...);
-    }
-    catch (...) {
-        async_limit.release();
-        throw;
-    }
+    semaphore_guard caller_guard{async_limit};
+
+    auto result = std::async(std::launch::async,
+                             [](auto&& f, auto&&... a) -> auto
+                             {
+                                 semaphore_guard callee_guard{async_limit,
+                                                              guard_type::only_release};
+                                 return std::invoke(std::forward<decltype(f)>(f),
+                                                    std::forward<decltype(a)>(a)...);
+                             },
+                             std::forward<Func>(func),
+                             std::forward<Args>(args)...);
+
+    // If async() didn't fail, let the async thread handle the semaphore release.
+    caller_guard.type = guard_type::only_acquire;
+
+    return result;
 }
 
 
@@ -305,7 +303,7 @@ seconds_to_human(double s)
     char buf[64];
 
     if (std::fabs(s) < 2) // less than 2 seconds
-        std::snprintf(buf, sizeof buf, "%.3f ms", 1000 * s);
+        std::snprintf(buf, sizeof buf, "%.1f ms", 1000 * s);
     else if (std::fabs(s) < 2 * 60) // less than 2 minutes
         std::snprintf(buf, sizeof buf, "%.1f s", s);
     else if (std::fabs(s) < 2 * 60 * 60) // less than 2 hours
@@ -349,7 +347,7 @@ split(const std::string& input,
 
     std::vector<string> result;
 
-    string::size_type start = 0;
+    string::size_type start = input.find_first_not_of(separators);
     while (start != string::npos) {
         auto finish = input.find_first_of(separators, start);
         result.push_back(input.substr(start, finish - start));
@@ -583,20 +581,55 @@ operator <(const struct sockaddr_in& a,
 }
 
 
-void
-update_time()
-try
-{
-    if (!cfg::sync)
-        return;
-        
-    progress_guard guard;
+// RAII type to ensure a function is never executed in parallel.
 
+struct exec_guard {
+    std::atomic<bool>& flag;
+    bool guarded = false;
+
+    exec_guard(std::atomic<bool>& f) :
+        flag(f)
+    {
+        bool expected_flag = false;
+        if (flag.compare_exchange_strong(expected_flag, true))
+            guarded = true; // Exactly one thread can have the "guarded" flag as true.
+    }
+
+    ~exec_guard()
+    {
+        if (guarded)
+            flag = false;
+    }
+};
+
+
+void
+update_offset()
+{
     cfg::offset = OSSecondsToTicks(cfg::minutes * 60);
     if (cfg::hours < 0)
         cfg::offset -= OSSecondsToTicks(-cfg::hours * 60 * 60);
     else
         cfg::offset += OSSecondsToTicks(cfg::hours * 60 * 60);
+}
+
+
+void
+update_time()
+{
+    if (!cfg::sync)
+        return;
+
+    static std::atomic<bool> executing = false;
+
+    exec_guard guard{executing};
+    if (!guard.guarded) {
+        // Another thread is already executing this function.
+        report_info("Skipping NTP task: already in progress.");
+        return;
+    }
+
+    update_offset();
 
     std::vector<std::string> servers = split(cfg::server, " \t,;");
 
@@ -637,7 +670,7 @@ try
             corrections.push_back(correction);
             report_info(to_string(address)
                         + ": correction = "s + seconds_to_human(correction)
-                        + ", latency = "s + seconds_to_human(latency) + "."s);
+                        + ", latency = "s + seconds_to_human(latency));
         }
         catch (std::exception& e) {
             report_error(to_string(address) + ": "s + e.what());
@@ -670,37 +703,33 @@ try
     if (cfg::notify)
         report_success("Clock corrected by " + seconds_to_human(avg_correction));
 }
-catch (progress_error&) {
-    report_info("Skipping NTP task: already in progress.");
+
+
+template<typename T>
+void
+load_or_init(const std::string& key,
+             T& variable)
+{
+    auto val = wups::load<T>(key);
+    if (!val)
+        wups::store(key, variable);
+    else
+        variable = *val;
 }
 
 
 INITIALIZE_PLUGIN()
 {
-    WUPSStorageError storageRes = WUPS_OpenStorage();
     // Check if the plugin's settings have been saved before.
-    if (storageRes == WUPS_STORAGE_ERROR_SUCCESS) {
-        if (WUPS_GetBool(nullptr, CFG_SYNC, &cfg::sync) == WUPS_STORAGE_ERROR_NOT_FOUND)
-            WUPS_StoreBool(nullptr, CFG_SYNC, cfg::sync);
+    if (WUPS_OpenStorage() == WUPS_STORAGE_ERROR_SUCCESS) {
 
-        if (WUPS_GetBool(nullptr, CFG_NOTIFY, &cfg::notify) == WUPS_STORAGE_ERROR_NOT_FOUND)
-            WUPS_StoreBool(nullptr, CFG_NOTIFY, cfg::notify);
-
-        if (WUPS_GetInt(nullptr, CFG_MSG_DURATION, &cfg::msg_duration) == WUPS_STORAGE_ERROR_NOT_FOUND)
-            WUPS_StoreInt(nullptr, CFG_MSG_DURATION, cfg::msg_duration);
-
-        if (WUPS_GetInt(nullptr, CFG_HOURS, &cfg::hours) == WUPS_STORAGE_ERROR_NOT_FOUND)
-            WUPS_StoreInt(nullptr, CFG_HOURS, cfg::hours);
-
-        if (WUPS_GetInt(nullptr, CFG_MINUTES, &cfg::minutes) == WUPS_STORAGE_ERROR_NOT_FOUND)
-            WUPS_StoreInt(nullptr, CFG_MINUTES, cfg::minutes);
-
-        if (WUPS_GetInt(nullptr, CFG_TOLERANCE, &cfg::tolerance) == WUPS_STORAGE_ERROR_NOT_FOUND)
-            WUPS_StoreInt(nullptr, CFG_TOLERANCE, cfg::tolerance);
-
-        if (WUPS_GetString(nullptr, CFG_SERVER, cfg::server, sizeof cfg::server)
-            == WUPS_STORAGE_ERROR_NOT_FOUND)
-            WUPS_StoreString(nullptr, CFG_SERVER, cfg::server);
+        load_or_init(CFG_HOURS,        cfg::hours);
+        load_or_init(CFG_MINUTES,      cfg::minutes);
+        load_or_init(CFG_MSG_DURATION, cfg::msg_duration);
+        load_or_init(CFG_NOTIFY,       cfg::notify);
+        load_or_init(CFG_SERVER,       cfg::server);
+        load_or_init(CFG_SYNC,         cfg::sync);
+        load_or_init(CFG_TOLERANCE,    cfg::tolerance);
 
         WUPS_CloseStorage();
     }
@@ -712,81 +741,226 @@ INITIALIZE_PLUGIN()
 }
 
 
+struct statistics {
+    double min = 0;
+    double max = 0;
+    double avg = 0;
+};
+
+
+statistics
+get_statistics(const std::vector<double>& values)
+{
+    statistics result;
+    double total = 0;
+
+    if (values.empty())
+        return result;
+
+    result.min = result.max = values.front();
+    for (auto x : values) {
+        result.min = std::fmin(result.min, x);
+        result.max = std::fmax(result.max, x);
+        total += x;
+    }
+
+    result.avg = total / values.size();
+
+    return result;
+}
+
+
+struct preview_item : wups::text_item {
+
+    struct server_info {
+        wups::text_item* name_item = nullptr;
+        wups::text_item* corr_item = nullptr;
+        wups::text_item* late_item = nullptr;
+    };
+
+    wups::category* category;
+
+    std::map<std::string, server_info> server_infos;
+
+    preview_item(wups::category* cat) :
+        wups::text_item{"", "Clock (\ue000 to refresh)"},
+        category{cat}
+    {
+        category->add(this);
+
+        std::vector<std::string> servers = split(cfg::server, " \t,;");
+        for (const auto& server : servers) {
+            if (!server_infos.contains(server)) {
+                auto& si = server_infos[server];
+
+                auto name_item = std::make_unique<wups::text_item>("", server + ":");
+                si.name_item = name_item.get();
+                category->add(std::move(name_item));
+
+                auto corr_item = std::make_unique<wups::text_item>("", "  Correction:");
+                si.corr_item = corr_item.get();
+                category->add(std::move(corr_item));
+
+                auto late_item = std::make_unique<wups::text_item>("", "  Latency:");
+                si.late_item = late_item.get();
+                category->add(std::move(late_item));
+            }
+        }
+    }
+
+
+    void
+    on_button_pressed(WUPSConfigButtons buttons)
+        override
+    {
+        wups::text_item::on_button_pressed(buttons);
+
+        if (buttons & WUPS_CONFIG_BUTTON_A)
+            run_preview();
+    }
+
+
+    void
+    run_preview()
+    try {
+
+        using std::make_unique;
+
+        update_offset();
+
+        for (auto& [key, value] : server_infos) {
+            value.name_item->text.clear();
+            value.corr_item->text.clear();
+            value.late_item->text.clear();
+        }
+
+        std::vector<std::string> servers = split(cfg::server, " \t,;");
+
+        addrinfo_query query = {
+            .family = AF_INET,
+            .socktype = SOCK_DGRAM,
+            .protocol = IPPROTO_UDP
+        };
+
+        double total = 0;
+        unsigned num_values = 0;
+
+        for (const auto& server : servers) {
+            auto& si = server_infos.at(server);
+            try {
+                auto infos = get_address_info(server, "123", query);
+
+                si.name_item->text = std::to_string(infos.size())
+                    + (infos.size() > 1 ? " addresses."s : " address."s);
+
+                std::vector<double> server_corrections;
+                std::vector<double> server_latencies;
+                unsigned errors = 0;
+
+                for (const auto& info : infos) {
+                    try {
+                        auto [correction, latency] = ntp_query(info.address);
+                        server_corrections.push_back(correction);
+                        server_latencies.push_back(latency);
+                        total += correction;
+                        ++num_values;
+                    }
+                    catch (std::exception& e) {
+                        ++errors;
+                    }
+                }
+
+                if (errors)
+                    si.name_item->text += " "s + std::to_string(errors)
+                        + (errors > 1 ? " errors."s : "error."s);
+                if (!server_corrections.empty()) {
+                    auto corr_stats = get_statistics(server_corrections);
+                    si.corr_item->text = "min = "s + seconds_to_human(corr_stats.min)
+                        + ", max = "s + seconds_to_human(corr_stats.max)
+                        + ", avg = "s + seconds_to_human(corr_stats.avg);
+                    auto late_stats = get_statistics(server_latencies);
+                    si.late_item->text = "min = "s + seconds_to_human(late_stats.min)
+                        + ", max = "s + seconds_to_human(late_stats.max)
+                        + ", avg = "s + seconds_to_human(late_stats.avg);
+                } else {
+                    si.corr_item->text = "No data.";
+                    si.late_item->text = "No data.";
+                }
+            }
+            catch (std::exception& e) {
+                si.name_item->text = e.what();
+            }
+        }
+
+        text = format_wiiu_time(OSGetTime());
+
+        if (num_values) {
+            double avg = total / num_values;
+            text += ", needs "s + seconds_to_human(avg);
+        }
+
+    }
+    catch (std::exception& e) {
+        text = "Error: "s + e.what();
+    }
+
+};
+
+
 WUPS_GET_CONFIG()
 {
     if (WUPS_OpenStorage() != WUPS_STORAGE_ERROR_SUCCESS)
         return 0;
 
-    WUPSConfigHandle settings;
-    WUPSConfig_CreateHandled(&settings, PLUGIN_NAME);
+    using std::make_unique;
 
-    WUPSConfigCategoryHandle config;
-    WUPSConfig_AddCategoryByNameHandled(settings, "Configuration", &config);
-    WUPSConfigCategoryHandle preview;
-    WUPSConfig_AddCategoryByNameHandled(settings, "Preview Time", &preview);
+    try {
 
-    WUPSConfigItemBoolean_AddToCategoryHandled(settings, config, CFG_SYNC,
-                                               "Syncing Enabled",
-                                               cfg::sync,
-                                               [](ConfigItemBoolean*, bool value)
-                                               {
-                                                   WUPS_StoreBool(nullptr, CFG_SYNC, value);
-                                                   cfg::sync = value;
-                                               });
-    WUPSConfigItemBoolean_AddToCategoryHandled(settings, config, CFG_NOTIFY,
-                                               "Show Notifications",
-                                               cfg::notify,
-                                               [](ConfigItemBoolean*, bool value)
-                                               {
-                                                   WUPS_StoreBool(nullptr, CFG_NOTIFY, value);
-                                                   cfg::notify = value;
-                                               });
-    WUPSConfigItemIntegerRange_AddToCategoryHandled(settings, config, CFG_HOURS,
-                                                    "Time Offset (hours)",
-                                                    cfg::hours, -12, 14,
-                                                    [](ConfigItemIntegerRange*, int32_t value)
-                                                    {
-                                                        WUPS_StoreInt(nullptr, CFG_HOURS, value);
-                                                        cfg::hours = value;
-                                                    });
-    WUPSConfigItemIntegerRange_AddToCategoryHandled(settings, config, CFG_MINUTES,
-                                                    "Time Offset (minutes)",
-                                                    cfg::minutes, 0, 59,
-                                                    [](ConfigItemIntegerRange*, int32_t value)
-                                                    {
-                                                        WUPS_StoreInt(nullptr, CFG_MINUTES,
-                                                                      value);
-                                                        cfg::minutes = value;
-                                                    });
-    WUPSConfigItemIntegerRange_AddToCategoryHandled(settings, config, CFG_MSG_DURATION,
-                                                    "Message Duration (seconds)",
-                                                    cfg::msg_duration, 0, 30,
-                                                    [](ConfigItemIntegerRange*, int32_t value)
-                                                    {
-                                                        WUPS_StoreInt(nullptr, CFG_MSG_DURATION,
-                                                                      value);
-                                                        cfg::msg_duration = value;
-                                                    });
-    WUPSConfigItemIntegerRange_AddToCategoryHandled(settings, config, CFG_TOLERANCE,
-                                                    "Tolerance (milliseconds)",
-                                                    cfg::tolerance, 0, 5000,
-                                                    [](ConfigItemIntegerRange*, int32_t value)
-                                                    {
-                                                        WUPS_StoreInt(nullptr, CFG_TOLERANCE,
-                                                                      value);
-                                                        cfg::tolerance = value;
-                                                    });
+        auto config = make_unique<wups::category>("Configuration");
 
-    // show current NTP server address, no way to change it.
-    std::string server = "NTP Servers: "s + cfg::server;
-    WUPSConfigItemStub_AddToCategoryHandled(settings, config, CFG_SERVER, server.c_str());
+        config->add(make_unique<wups::bool_item>(CFG_SYNC,
+                                                 "Syncing Enabled",
+                                                 cfg::sync));
 
-    // Prepare the time to be shown for the user.
-    std::string time = "Current Time: "s + format_wiiu_time(OSGetTime());
-    WUPSConfigItemStub_AddToCategoryHandled(settings, preview, "time",
-                                            time.c_str());
+        config->add(make_unique<wups::bool_item>(CFG_NOTIFY,
+                                                 "Show Notifications",
+                                                 cfg::notify));
 
-    return settings;
+        config->add(make_unique<wups::int_item>(CFG_MSG_DURATION,
+                                                "Notification Duration (seconds)",
+                                                cfg::msg_duration, 0, 30));
+
+        config->add(make_unique<wups::int_item>(CFG_HOURS,
+                                                "Hours Offset",
+                                                cfg::hours, -12, 14));
+
+        config->add(make_unique<wups::int_item>(CFG_MINUTES,
+                                                "Minutes Offset",
+                                                cfg::minutes, 0, 59));
+
+        config->add(make_unique<wups::int_item>(CFG_TOLERANCE,
+                                                "Tolerance (milliseconds, \ue083/\ue084 for +/- 50)",
+                                                cfg::tolerance, 0, 5000));
+
+        // show current NTP server address, no way to change it.
+        config->add(make_unique<wups::text_item>(CFG_SERVER,
+                                                 "NTP servers",
+                                                 cfg::server));
+
+        auto preview = make_unique<wups::category>("Preview");
+        // The preview_item adds itself to the category already.
+        make_unique<preview_item>(preview.get()).release();
+
+        auto root = make_unique<wups::config>(PLUGIN_NAME);
+        root->add(std::move(config));
+        root->add(std::move(preview));
+
+        return root.release()->handle;
+
+    }
+    catch (...) {
+        return 0;
+    }
 }
 
 

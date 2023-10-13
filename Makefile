@@ -21,22 +21,28 @@ WUT_ROOT := $(DEVKITPRO)/wut
 #-------------------------------------------------------------------------------
 TARGET		:=	Wii_U_Time_Sync
 BUILD		:=	build
-SOURCES		:=	source
+SOURCES		:=	source source/wupsxx
 DATA		:=	data
 INCLUDES	:=	source
+
+# Be verbose by default.
+V ?= 1
 
 #-------------------------------------------------------------------------------
 # options for code generation
 #-------------------------------------------------------------------------------
-CFLAGS	:=	-Wall -Wextra -Wundef -Wpointer-arith -Wcast-align \
-			-O2 -fipa-pta -pipe -ffunction-sections \
-			$(MACHDEP)
+WARN_FLAGS	:= -Wall -Wextra -Wundef -Wpointer-arith -Wcast-align
 
-CFLAGS	+=	$(INCLUDE) -D__WIIU__ -D__WUT__ -D__WUPS__ 
+OPTFLAGS	:= -O2 -fipa-pta -ffunction-sections
+
+CFLAGS	:=	$(WARN_FLAGS) $(OPTFLAGS) $(MACHDEP)
+
+CPPFLAGS	:= $(INCLUDE) -D__WIIU__ -D__WUT__ -D__WUPS__
 
 CXXFLAGS	:= $(CFLAGS) -std=c++23
 
 ASFLAGS	:=	-g $(ARCH)
+
 LDFLAGS	=	-g $(ARCH) $(RPXSPECS) -Wl,-Map,$(notdir $*.map) $(WUPSSPECS) 
 
 LIBS	:= -lnotifications -lwups -lwut
@@ -92,19 +98,19 @@ export INCLUDE	:=	$(foreach dir,$(INCLUDES),-I$(CURDIR)/$(dir)) \
 
 export LIBPATHS	:=	$(foreach dir,$(LIBDIRS),-L$(dir)/lib)
 
-.PHONY: $(BUILD) clean all
+.PHONY: $(BUILD) clean all upload
 
 #-------------------------------------------------------------------------------
 all: $(BUILD)
 
 $(BUILD):
 	@[ -d $@ ] || mkdir -p $@
-	@$(MAKE) --no-print-directory -C $(BUILD) -f $(CURDIR)/Makefile
+	$(MAKE) -C $(BUILD) -f $(CURDIR)/Makefile V=$(V)
 
 #-------------------------------------------------------------------------------
 clean:
-	@echo clean ...
-	@rm -fr $(BUILD) $(TARGET).wps $(TARGET).elf
+	$(info clean ...)
+	$(RM) -r $(BUILD) $(TARGET).wps $(TARGET).elf
 
 #-------------------------------------------------------------------------------
 else
@@ -127,8 +133,8 @@ $(OFILES_SRC)	: $(HFILES_BIN)
 #-------------------------------------------------------------------------------
 %.bin.o	%_bin.h :	%.bin
 #-------------------------------------------------------------------------------
-	@echo $(notdir $<)
-	@$(bin2o)
+	$(info $(notdir $<))
+	$(bin2o)
 
 -include $(DEPENDS)
 
