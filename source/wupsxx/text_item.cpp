@@ -47,6 +47,8 @@ namespace wups {
     void
     text_item::on_button_pressed(WUPSConfigButtons buttons)
     {
+        base_item::on_button_pressed(buttons);
+
         if (text.empty())
             return;
 

@@ -6,6 +6,8 @@
 #include <string>
 #include <expected>
 
+#include <wups/storage.h>
+
 
 namespace wups {
 
