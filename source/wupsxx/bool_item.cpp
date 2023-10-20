@@ -6,6 +6,8 @@
 #include "bool_item.hpp"
 #include "storage.hpp"
 
+#include "../nintendo_glyphs.hpp"
+
 
 namespace wups {
 
@@ -33,9 +35,9 @@ namespace wups {
         const
     {
         if (variable)
-            std::snprintf(buf, size, "< %s  ", true_str.c_str());
+            std::snprintf(buf, size, "%s %s  ", NIN_GLYPH_BTN_DPAD_LEFT, true_str.c_str());
         else
-            std::snprintf(buf, size, "  %s >", false_str.c_str());
+            std::snprintf(buf, size, "  %s %s", false_str.c_str(), NIN_GLYPH_BTN_DPAD_RIGHT);
         return 0;
     }
 

@@ -24,6 +24,7 @@ BUILD		:=	build
 SOURCES		:=	source source/wupsxx
 DATA		:=	data
 INCLUDES	:=	source
+PLUGIN_NAME	:=	"Wii U Time Sync"
 
 # Be verbose by default.
 V ?= 1
@@ -37,13 +38,23 @@ OPTFLAGS	:= -O2 -fipa-pta -ffunction-sections
 
 CFLAGS	:=	$(WARN_FLAGS) $(OPTFLAGS) $(MACHDEP)
 
-CPPFLAGS	:= $(INCLUDE) -D__WIIU__ -D__WUT__ -D__WUPS__
-
 CXXFLAGS	:= $(CFLAGS) -std=c++23
+
+# Note: INCLUDE will be defined later, so CPPFLAGS has to be of the recursive flavor.
+CPPFLAGS	= $(INCLUDE) \
+		  -D__WIIU__ \
+		  -D__WUT__ \
+		  -D__WUPS__ \
+		  -DPLUGIN_NAME=\"$(PLUGIN_NAME)\"
 
 ASFLAGS	:=	-g $(ARCH)
 
-LDFLAGS	=	-g $(ARCH) $(RPXSPECS) -Wl,-Map,$(notdir $*.map) $(WUPSSPECS) 
+LDFLAGS	=	-g \
+		$(ARCH) \
+		$(RPXSPECS) \
+		$(WUPSSPECS) \
+		-Wl,-Map,$(notdir $*.map) \
+		$(OPTFLAGS)
 
 LIBS	:= -lnotifications -lwups -lwut
 
@@ -51,7 +62,7 @@ LIBS	:= -lnotifications -lwups -lwut
 # list of directories containing libraries, this must be the top level
 # containing include and lib
 #-------------------------------------------------------------------------------
-LIBDIRS	:= $(PORTLIBS) $(WUMS_ROOT) $(WUPS_ROOT) $(WUT_ROOT)
+LIBDIRS	:= $(WUMS_ROOT) $(WUPS_ROOT) $(WUT_ROOT)
 
 #-------------------------------------------------------------------------------
 # no real need to edit anything past this point unless you need to add additional
@@ -93,12 +104,11 @@ export OFILES 	:=	$(OFILES_BIN) $(OFILES_SRC)
 export HFILES_BIN	:=	$(addsuffix .h,$(subst .,_,$(BINFILES)))
 
 export INCLUDE	:=	$(foreach dir,$(INCLUDES),-I$(CURDIR)/$(dir)) \
-			$(foreach dir,$(LIBDIRS),-I$(dir)/include) \
-			-I$(CURDIR)/$(BUILD)
+			$(foreach dir,$(LIBDIRS),-I$(dir)/include)
 
 export LIBPATHS	:=	$(foreach dir,$(LIBDIRS),-L$(dir)/lib)
 
-.PHONY: $(BUILD) clean all upload
+.PHONY: $(BUILD) clean all
 
 #-------------------------------------------------------------------------------
 all: $(BUILD)

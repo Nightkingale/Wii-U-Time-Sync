@@ -7,6 +7,8 @@
 #include "int_item.hpp"
 #include "storage.hpp"
 
+#include "../nintendo_glyphs.hpp"
+
 
 namespace wups {
 
@@ -37,13 +39,23 @@ namespace wups {
     int_item::get_current_value_selected_display(char* buf, std::size_t size)
         const
     {
-        char left = ' ';
-        char right = ' ';
-        if (variable > min_value)
-            left = '<';
-        if (variable < max_value)
-            right = '>';
-        std::snprintf(buf, size, "%c %d %c", left, variable, right);
+        const char* left = "";
+        const char* right = "";
+        const char* fast_left = "";
+        const char* fast_right = "";
+        if (variable > min_value) {
+            left = NIN_GLYPH_BTN_DPAD_LEFT;
+            fast_left = NIN_GLYPH_BTN_L;
+        } if (variable < max_value) {
+            right = NIN_GLYPH_BTN_DPAD_RIGHT;
+            fast_right = NIN_GLYPH_BTN_R;
+        }
+        std::snprintf(buf, size, "%s%s %d %s%s",
+                      fast_left,
+                      left,
+                      variable,
+                      right,
+                      fast_right);
         return 0;
     }
 
