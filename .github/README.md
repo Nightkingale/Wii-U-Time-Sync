@@ -23,7 +23,7 @@ If the program is placed correctly on an SD card, Wii U Time Sync will be listed
     * This cannot be edited on the console. However, you can edit the Wii U Time Sync configuration file on a computer to adjust the default server, or add more.
         * The configuration file: `wiiu/environments/aroma/plugins/config/Wii U Time Sync.json`
         * An example edit: `"server": "pool.ntp.org time.windows.com",`
-* `Preview Time`: Lets you preview what the system's clock is currently set to.
+* `Preview`: Lets you preview what the system's clock is currently set to, as well as correction and latency statistics.
 
 As long as syncing is enabled by the user, the clock will sync whenever Wii U Time Sync starts, or when the plugin settings are exited.
 
