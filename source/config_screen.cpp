@@ -72,16 +72,15 @@ config_screen::config_screen() :
 {
     add(make_unique<bool_item>(cfg::key::sync, "Syncing Enabled", cfg::sync));
     add(make_unique<bool_item>(cfg::key::notify, "Show Notifications", cfg::notify));
-    add(make_unique<int_item>(cfg::key::msg_duration, "Notification Duration (seconds)",
-                              cfg::msg_duration, 0, 30));
     add(make_unique<int_item>(cfg::key::hours, "Hours Offset", cfg::hours, -12, 14));
     add(make_unique<int_item>(cfg::key::minutes, "Minutes Offset", cfg::minutes, 0, 59));
-
-    add(make_unique<timezone_item>());
-
+    add(make_unique<int_item>(cfg::key::msg_duration, "Notification Duration (seconds)",
+                              cfg::msg_duration, 0, 30));
     add(make_unique<int_item>(cfg::key::tolerance, "Tolerance (milliseconds)",
                               cfg::tolerance, 0, 5000));
 
+    add(make_unique<timezone_item>());
+
     // show current NTP server address, no way to change it.
-    add(make_unique<wups::text_item>(cfg::key::server, "NTP servers", cfg::server));
+    add(make_unique<wups::text_item>(cfg::key::server, "NTP Servers", cfg::server));
 }
