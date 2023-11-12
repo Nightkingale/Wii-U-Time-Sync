@@ -14,7 +14,8 @@
 
 // WUT/WUPS headers
 #include <coreinit/time.h>
-#include <nn/pdm.h>
+#include <nn/ccr.h>             // CCRSysSetSystemTime()
+#include <nn/pdm.h>             // __OSSetAbsoluteSystemTime()
 
 // unix headers
 #include <sys/select.h>         // select()
@@ -31,10 +32,6 @@
 
 
 using namespace std::literals;
-
-
-extern "C" int32_t CCRSysSetSystemTime(OSTime time); // from nn_ccr.rpl
-extern "C" BOOL __OSSetAbsoluteSystemTime(OSTime time); // from coreinit.rpl
 
 
 std::counting_semaphore<> async_limit{5}; // limit to 5 threads
