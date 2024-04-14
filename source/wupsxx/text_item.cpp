@@ -4,7 +4,7 @@
 #include <cstdio>
 #include <stdexcept>
 
-#include "text_item.hpp"
+#include "../../include/wupsxx/text_item.hpp"
 
 
 using namespace std::literals;

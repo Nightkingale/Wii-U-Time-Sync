@@ -2,7 +2,7 @@
 
 #include <wups.h>
 
-#include "storage.hpp"
+#include "../../include/wupsxx/storage.hpp"
 
 
 namespace wups {

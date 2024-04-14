@@ -23,7 +23,7 @@ TARGET		:=	Wii_U_Time_Sync
 BUILD		:=	build
 SOURCES		:=	source source/wupsxx
 DATA		:=	data
-INCLUDES	:=	source
+INCLUDES	:=	include include/wupsxx
 PLUGIN_NAME	:=	"Wii U Time Sync"
 
 # Be verbose by default.

@@ -2,7 +2,7 @@
 
 #include <stdexcept>
 
-#include "config.hpp"
+#include "../../include/wupsxx/config.hpp"
 
 
 namespace wups {

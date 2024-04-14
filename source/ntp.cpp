@@ -3,7 +3,7 @@
 #include <bit>                  // endian, byteswap()
 #include <cmath>
 
-#include "ntp.hpp"
+#include "../include/ntp.hpp"
 
 
 #ifdef __WIIU__

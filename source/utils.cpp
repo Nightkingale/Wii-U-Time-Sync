@@ -15,7 +15,7 @@
 #include <unistd.h>             // close()
 
 // local headers
-#include "utils.hpp"
+#include "../include/utils.hpp"
 
 
 namespace utils {

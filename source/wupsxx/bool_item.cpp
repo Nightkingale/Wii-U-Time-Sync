@@ -6,7 +6,7 @@
 #include "bool_item.hpp"
 #include "storage.hpp"
 
-#include "../nintendo_glyphs.hpp"
+#include "../../include/nintendo_glyphs.hpp"
 
 
 namespace wups {

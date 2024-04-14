@@ -8,9 +8,9 @@
 
 #include <sys/socket.h>         // connect()
 
-#include "http_client.hpp"
+#include "../include/http_client.hpp"
 
-#include "utils.hpp"
+#include "../include/utils.hpp"
 
 
 #define LOG(FMT, ...)  WHBLogPrintf(FMT __VA_OPT__(,) __VA_ARGS__)
