@@ -12,6 +12,7 @@ include $(DEVKITPRO)/wups/share/wups_rules
 
 WUMS_ROOT := $(DEVKITPRO)/wums
 WUT_ROOT := $(DEVKITPRO)/wut
+
 #-------------------------------------------------------------------------------
 # PLUGIN_NAME sets the name of the plugin
 # PLUGIN_DESCRIPTION sets the description of the plugin
@@ -21,7 +22,7 @@ WUT_ROOT := $(DEVKITPRO)/wut
 #-------------------------------------------------------------------------------
 PLUGIN_NAME	            :=	"Wii U Time Sync"
 PLUGIN_DESCRIPTION	    :=	"A plugin that synchronizes a Wii U\'s clock to the Internet."
-PLUGIN_VERSION          :=	"v2.1.0"
+PLUGIN_VERSION          :=	"v2.1.1"
 PLUGIN_AUTHOR	        :=	"Nightkingale, Daniel K. O."
 PLUGIN_LICENSE	        :=	"MIT"
 
