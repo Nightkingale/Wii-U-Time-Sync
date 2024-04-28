@@ -1,4 +1,9 @@
-/.vscode
+# Compilation
 /build
+
+# Distribution
 *.elf
 *.wps
+
+# Virtual Studio Code
+/.vscode
