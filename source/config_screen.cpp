@@ -8,10 +8,10 @@
 
 #include "config_screen.hpp"
 
-#include "../include/cfg.hpp"
-#include "../include/http_client.hpp"
-#include "../include/nintendo_glyphs.hpp"
-#include "../include/utils.hpp"
+#include "cfg.hpp"
+#include "http_client.hpp"
+#include "nintendo_glyphs.hpp"
+#include "utils.hpp"
 
 
 using wups::bool_item;

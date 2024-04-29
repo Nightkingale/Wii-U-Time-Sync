@@ -6,11 +6,11 @@
 
 #include "preview_screen.hpp"
 
-#include "../include/cfg.hpp"
-#include "../include/core.hpp"
-#include "../include/log.hpp"
-#include "../include/nintendo_glyphs.hpp"
-#include "../include/utils.hpp"
+#include "cfg.hpp"
+#include "core.hpp"
+#include "log.hpp"
+#include "nintendo_glyphs.hpp"
+#include "utils.hpp"
 
 
 using std::make_unique;

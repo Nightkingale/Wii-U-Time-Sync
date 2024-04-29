@@ -10,11 +10,11 @@
 #include <whb/log_udp.h>
 
 // local headers
-#include "../include/cfg.hpp"
-#include "../include/config_screen.hpp"
-#include "../include/preview_screen.hpp"
-#include "../include/core.hpp"
-#include "../include/wupsxx/config.hpp"
+#include "cfg.hpp"
+#include "config_screen.hpp"
+#include "preview_screen.hpp"
+#include "core.hpp"
+#include "wupsxx/config.hpp"
 
 
 // Important plugin information.

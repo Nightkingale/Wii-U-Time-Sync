@@ -21,14 +21,14 @@
 #include <sys/select.h>         // select()
 #include <sys/socket.h>         // connect(), send(), recv()
 
-#include "../include/core.hpp"
+#include "core.hpp"
 
-#include "../include/cfg.hpp"
-#include "../include/limited_async.hpp"
-#include "../include/log.hpp"
-#include "../include/ntp.hpp"
-#include "../include/utc.hpp"
-#include "../include/utils.hpp"
+#include "cfg.hpp"
+#include "limited_async.hpp"
+#include "log.hpp"
+#include "ntp.hpp"
+#include "utc.hpp"
+#include "utils.hpp"
 
 
 using namespace std::literals;

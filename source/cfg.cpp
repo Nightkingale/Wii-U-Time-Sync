@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 
-#include "../include/cfg.hpp"
+#include "cfg.hpp"
 
-#include "../include/utc.hpp"
-#include "../include/wupsxx/storage.hpp"
+#include "utc.hpp"
+#include "wupsxx/storage.hpp"
 
 
 namespace cfg {

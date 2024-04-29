@@ -2,7 +2,7 @@
 
 #include <coreinit/time.h>
 
-#include "../include/utc.hpp"
+#include "utc.hpp"
 
 
 namespace utc {

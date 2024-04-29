@@ -2,9 +2,9 @@
 
 #include <notifications/notifications.h>
 
-#include "../include/log.hpp"
+#include "log.hpp"
 
-#include "../include/cfg.hpp"
+#include "cfg.hpp"
 
 
 void
