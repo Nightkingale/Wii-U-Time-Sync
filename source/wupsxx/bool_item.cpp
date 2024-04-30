@@ -4,9 +4,8 @@
 #include <stdexcept>
 
 #include "bool_item.hpp"
-#include "storage.hpp"
-
 #include "nintendo_glyphs.hpp"
+#include "storage.hpp"
 
 
 namespace wups {
