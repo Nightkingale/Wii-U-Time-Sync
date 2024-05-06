@@ -4,12 +4,11 @@
 #include <memory>
 #include <vector>
 
-#include "preview_screen.hpp"
-
 #include "cfg.hpp"
 #include "core.hpp"
 #include "log.hpp"
 #include "nintendo_glyphs.hpp"
+#include "preview_screen.hpp"
 #include "utils.hpp"
 
 
@@ -159,7 +158,7 @@ try {
 
             if (errors)
                 si.name->text += " "s + to_string(errors)
-                    + (errors > 1 ? " errors."s : "error."s);
+                    + (errors > 1 ? " errors."s : " error."s);
             if (!server_corrections.empty()) {
                 auto corr_stats = get_statistics(server_corrections);
                 si.correction->text = "min = "s + seconds_to_human(corr_stats.min)

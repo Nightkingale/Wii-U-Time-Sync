@@ -2,16 +2,14 @@
 
 #include <memory>               // make_unique()
 
-#include "wupsxx/bool_item.hpp"
-#include "wupsxx/int_item.hpp"
-#include "wupsxx/text_item.hpp"
-
-#include "config_screen.hpp"
-
 #include "cfg.hpp"
+#include "config_screen.hpp"
 #include "http_client.hpp"
 #include "nintendo_glyphs.hpp"
 #include "utils.hpp"
+#include "wupsxx/bool_item.hpp"
+#include "wupsxx/int_item.hpp"
+#include "wupsxx/text_item.hpp"
 
 
 using wups::bool_item;

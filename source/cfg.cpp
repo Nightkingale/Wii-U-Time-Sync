@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 
 #include "cfg.hpp"
-
 #include "utc.hpp"
 #include "wupsxx/storage.hpp"
 

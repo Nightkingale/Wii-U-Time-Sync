@@ -3,7 +3,7 @@
 #include <cstdio>
 #include <stdexcept>
 
-#include "base_item.hpp"
+#include "wupsxx/base_item.hpp"
 
 
 namespace wups {

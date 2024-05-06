@@ -12,18 +12,15 @@
 #include <thread>
 #include <vector>
 
-// WUT/WUPS headers
+// WUT/WUPS and unix headers
 #include <coreinit/time.h>
 #include <nn/ccr.h>             // CCRSysSetSystemTime()
 #include <nn/pdm.h>             // __OSSetAbsoluteSystemTime()
-
-// unix headers
 #include <sys/select.h>         // select()
 #include <sys/socket.h>         // connect(), send(), recv()
 
-#include "core.hpp"
-
 #include "cfg.hpp"
+#include "core.hpp"
 #include "limited_async.hpp"
 #include "log.hpp"
 #include "ntp.hpp"

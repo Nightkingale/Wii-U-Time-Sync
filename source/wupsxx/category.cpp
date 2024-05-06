@@ -2,7 +2,7 @@
 
 #include <stdexcept>
 
-#include "category.hpp"
+#include "wupsxx/category.hpp"
 
 
 namespace wups {

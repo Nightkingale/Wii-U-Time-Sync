@@ -12,6 +12,20 @@ include $(DEVKITPRO)/wups/share/wups_rules
 
 WUMS_ROOT := $(DEVKITPRO)/wums
 WUT_ROOT := $(DEVKITPRO)/wut
+
+#-------------------------------------------------------------------------------
+# PLUGIN_NAME sets the name of the plugin
+# PLUGIN_DESCRIPTION sets the description of the plugin
+# PLUGIN_VERSION sets the version of the plugin
+# PLUGIN_AUTHOR sets the author of the plugin
+# PLUGIN_LICENSE sets the license of the plugin
+#-------------------------------------------------------------------------------
+PLUGIN_NAME	            :=	"Wii U Time Sync"
+PLUGIN_DESCRIPTION	    :=	"A plugin that synchronizes a Wii U\'s clock to the Internet."
+PLUGIN_VERSION          :=	"v2.1.1"
+PLUGIN_AUTHOR	        :=	"Nightkingale, Daniel K. O."
+PLUGIN_LICENSE	        :=	"MIT"
+
 #-------------------------------------------------------------------------------
 # TARGET is the name of the output
 # BUILD is the directory where object files & intermediate files will be placed
@@ -23,8 +37,7 @@ TARGET		:=	Wii_U_Time_Sync
 BUILD		:=	build
 SOURCES		:=	source source/wupsxx
 DATA		:=	data
-INCLUDES	:=	source
-PLUGIN_NAME	:=	"Wii U Time Sync"
+INCLUDES	:=	include include/wupsxx
 
 # Be verbose by default.
 V ?= 1
@@ -41,11 +54,12 @@ CFLAGS	:=	$(WARN_FLAGS) $(OPTFLAGS) $(MACHDEP)
 CXXFLAGS	:= $(CFLAGS) -std=c++23
 
 # Note: INCLUDE will be defined later, so CPPFLAGS has to be of the recursive flavor.
-CPPFLAGS	= $(INCLUDE) \
-		  -D__WIIU__ \
-		  -D__WUT__ \
-		  -D__WUPS__ \
-		  -DPLUGIN_NAME=\"$(PLUGIN_NAME)\"
+CPPFLAGS	= $(INCLUDE) -D__WIIU__ -D__WUT__ -D__WUPS__ \
+			-DPLUGIN_NAME=\"$(PLUGIN_NAME)\" \
+			-DPLUGIN_DESCRIPTION=\"$(PLUGIN_DESCRIPTION)\" \
+			-DPLUGIN_VERSION=\"$(PLUGIN_VERSION)\" \
+			-DPLUGIN_AUTHOR=\"$(PLUGIN_AUTHOR)\" \
+			-DPLUGIN_LICENSE=\"$(PLUGIN_LICENSE)\"
 
 ASFLAGS	:=	-g $(ARCH)
 

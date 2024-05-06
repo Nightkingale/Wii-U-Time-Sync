@@ -6,23 +6,23 @@
 
 // WUT/WUPS headers
 #include <notifications/notifications.h>
-#include <wups.h>
 #include <whb/log_udp.h>
+#include <wups.h>
 
 // local headers
 #include "cfg.hpp"
 #include "config_screen.hpp"
-#include "preview_screen.hpp"
 #include "core.hpp"
+#include "preview_screen.hpp"
 #include "wupsxx/config.hpp"
 
 
 // Important plugin information.
 WUPS_PLUGIN_NAME(PLUGIN_NAME);
-WUPS_PLUGIN_DESCRIPTION("A plugin that synchronizes a Wii U's clock to the Internet.");
-WUPS_PLUGIN_VERSION("v2.1.0");
-WUPS_PLUGIN_AUTHOR("Nightkingale, Daniel K. O.");
-WUPS_PLUGIN_LICENSE("MIT");
+WUPS_PLUGIN_DESCRIPTION(PLUGIN_DESCRIPTION);
+WUPS_PLUGIN_VERSION(PLUGIN_VERSION);
+WUPS_PLUGIN_AUTHOR(PLUGIN_AUTHOR);
+WUPS_PLUGIN_LICENSE(PLUGIN_LICENSE);
 
 WUPS_USE_WUT_DEVOPTAB();
 WUPS_USE_STORAGE(PLUGIN_NAME);
