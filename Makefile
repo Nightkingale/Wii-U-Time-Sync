@@ -27,6 +27,16 @@ PLUGIN_AUTHOR	        :=	"Nightkingale, Daniel K. O."
 PLUGIN_LICENSE	        :=	"MIT"
 
 #-------------------------------------------------------------------------------
+# DEBUG_BUILD sets the debug flag for the plugin
+#-------------------------------------------------------------------------------
+DEBUG_BUILD := 0
+
+ifeq ($(DEBUG_BUILD), 1)
+GIT_HASH := $(shell git rev-parse --short HEAD)
+PLUGIN_VERSION := $(PLUGIN_VERSION)-$(GIT_HASH)
+endif
+
+#-------------------------------------------------------------------------------
 # TARGET is the name of the output
 # BUILD is the directory where object files & intermediate files will be placed
 # SOURCES is a list of directories containing source code
@@ -38,9 +48,6 @@ BUILD		:=	build
 SOURCES		:=	source source/wupsxx
 DATA		:=	data
 INCLUDES	:=	include include/wupsxx
-
-# Be verbose by default.
-V ?= 1
 
 #-------------------------------------------------------------------------------
 # options for code generation
@@ -129,7 +136,7 @@ all: $(BUILD)
 
 $(BUILD):
 	@[ -d $@ ] || mkdir -p $@
-	$(MAKE) -C $(BUILD) -f $(CURDIR)/Makefile V=$(V)
+	$(MAKE) -C $(BUILD) -f $(CURDIR)/Makefile V=$(DEBUG_BUILD)
 
 #-------------------------------------------------------------------------------
 clean:
