@@ -4,11 +4,12 @@
 #include <memory>
 #include <vector>
 
+#include "preview_screen.hpp"
+
 #include "cfg.hpp"
 #include "core.hpp"
 #include "log.hpp"
 #include "nintendo_glyphs.hpp"
-#include "preview_screen.hpp"
 #include "utils.hpp"
 
 

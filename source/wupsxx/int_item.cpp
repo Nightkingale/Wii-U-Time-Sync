@@ -4,9 +4,10 @@
 #include <cstdio>
 #include <stdexcept>
 
-#include "nintendo_glyphs.hpp"
 #include "wupsxx/int_item.hpp"
 #include "wupsxx/storage.hpp"
+
+#include "nintendo_glyphs.hpp"
 
 
 namespace wups {

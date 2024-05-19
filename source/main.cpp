@@ -6,14 +6,14 @@
 
 // WUT/WUPS headers
 #include <notifications/notifications.h>
-#include <whb/log_udp.h>
 #include <wups.h>
+#include <whb/log_udp.h>
 
 // local headers
 #include "cfg.hpp"
 #include "config_screen.hpp"
-#include "core.hpp"
 #include "preview_screen.hpp"
+#include "core.hpp"
 #include "wupsxx/config.hpp"
 
 
