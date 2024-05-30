@@ -20,11 +20,11 @@ WUT_ROOT := $(DEVKITPRO)/wut
 # PLUGIN_AUTHOR sets the author of the plugin.
 # PLUGIN_LICENSE sets the license of the plugin.
 #-------------------------------------------------------------------------------
-PLUGIN_NAME	            :=	"Wii U Time Sync"
-PLUGIN_DESCRIPTION	    :=	"A plugin that synchronizes a Wii U\'s clock to the Internet."
-PLUGIN_VERSION          :=	"v2.1.1"
-PLUGIN_AUTHOR	        :=	"Nightkingale, Daniel K. O."
-PLUGIN_LICENSE	        :=	"MIT"
+PLUGIN_NAME        := Wii U Time Sync
+PLUGIN_DESCRIPTION := A plugin that synchronizes the system clock to the Internet.
+PLUGIN_VERSION     := v2.1.1
+PLUGIN_AUTHOR      := Nightkingale, Daniel K. O.
+PLUGIN_LICENSE     := MIT
 
 #-------------------------------------------------------------------------------
 # TARGET is the name of the output.
@@ -33,11 +33,11 @@ PLUGIN_LICENSE	        :=	"MIT"
 # DATA is a list of directories containing data files.
 # INCLUDES is a list of directories containing header files.
 #-------------------------------------------------------------------------------
-TARGET		:=	Wii_U_Time_Sync
-BUILD		:=	build
-SOURCES		:=	source source/wupsxx
-DATA		:=	data
-INCLUDES	:=	include include/wupsxx
+TARGET   := Wii_U_Time_Sync
+BUILD    := build
+SOURCES  := source source/net source/wupsxx
+DATA     := data
+INCLUDES := include
 
 #-------------------------------------------------------------------------------
 # DEBUG sets the debug flag for the plugin.
@@ -48,7 +48,7 @@ INCLUDES	:=	include include/wupsxx
 DEBUG := 0
 
 # This appends the git hash to the version string.
-ifeq ($(DEBUG), 1)
+ifeq ($(DEBUG),1)
 	GIT_HASH := $(shell git rev-parse --short HEAD)
 	PLUGIN_VERSION := $(PLUGIN_VERSION)-$(GIT_HASH)
 endif
@@ -56,32 +56,33 @@ endif
 #-------------------------------------------------------------------------------
 # options for code generation
 #-------------------------------------------------------------------------------
-WARN_FLAGS	:= -Wall -Wextra -Wundef -Wpointer-arith -Wcast-align
+WARN_FLAGS := -Wall -Wextra -Wundef -Wpointer-arith -Wcast-align
 
-OPTFLAGS	:= -O2 -fipa-pta -ffunction-sections
+OPTFLAGS := -O2 -fipa-pta -ffunction-sections
 
-CFLAGS	:=	$(WARN_FLAGS) $(OPTFLAGS) $(MACHDEP)
+CFLAGS := $(WARN_FLAGS) $(OPTFLAGS) $(MACHDEP)
 
-CXXFLAGS	:= $(CFLAGS) -std=c++23
+CXXFLAGS := $(CFLAGS) -std=c++23
+
+DEFINES := '-DPLUGIN_NAME="$(PLUGIN_NAME)"'                   \
+           '-DPLUGIN_DESCRIPTION="$(PLUGIN_DESCRIPTION)"'     \
+           '-DPLUGIN_VERSION="$(PLUGIN_VERSION)"'             \
+           '-DPLUGIN_AUTHOR="$(PLUGIN_AUTHOR)"'               \
+           '-DPLUGIN_LICENSE="$(PLUGIN_LICENSE)"'
 
 # Note: INCLUDE will be defined later, so CPPFLAGS has to be of the recursive flavor.
-CPPFLAGS	= $(INCLUDE) -D__WIIU__ -D__WUT__ -D__WUPS__ \
-			-DPLUGIN_NAME=\"$(PLUGIN_NAME)\" \
-			-DPLUGIN_DESCRIPTION=\"$(PLUGIN_DESCRIPTION)\" \
-			-DPLUGIN_VERSION=\"$(PLUGIN_VERSION)\" \
-			-DPLUGIN_AUTHOR=\"$(PLUGIN_AUTHOR)\" \
-			-DPLUGIN_LICENSE=\"$(PLUGIN_LICENSE)\"
+CPPFLAGS = $(INCLUDE) -D__WIIU__ -D__WUT__ -D__WUPS__  $(DEFINES)
 
-ASFLAGS	:=	-g $(ARCH)
+ASFLAGS	:= -g $(ARCH)
 
-LDFLAGS	=	-g \
-		$(ARCH) \
-		$(RPXSPECS) \
-		$(WUPSSPECS) \
-		-Wl,-Map,$(notdir $*.map) \
-		$(OPTFLAGS)
+LDFLAGS	= -g \
+          $(ARCH) \
+          $(RPXSPECS) \
+          $(WUPSSPECS) \
+          -Wl,-Map,$(notdir $*.map) \
+          $(CXXFLAGS)
 
-LIBS	:= -lnotifications -lwups -lwut
+LIBS := -lnotifications -lwups -lwut
 
 #-------------------------------------------------------------------------------
 # list of directories containing libraries, this must be the top level

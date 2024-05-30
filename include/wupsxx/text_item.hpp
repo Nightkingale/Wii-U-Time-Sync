@@ -3,28 +3,45 @@
 #ifndef WUPSXX_TEXT_ITEM_HPP
 #define WUPSXX_TEXT_ITEM_HPP
 
-#include "base_item.hpp"
+#include <memory>
 
-namespace wups {
+#include "item.hpp"
 
-    struct text_item : base_item {
+
+namespace wups::config {
+
+    // Note: this class doesn't do much on its own, so it's all public.
+
+    struct text_item : item {
 
         std::string text;
-        int max_width = 50;
-        int start = 0;
+        std::size_t max_width;
+        std::size_t first = 0; // first visible character
 
-        text_item(const std::string& key = "",
-                  const std::string& name = "",
-                  const std::string& text = "");
+        text_item(const std::optional<std::string>& key,
+                  const std::string& label,
+                  const std::string& text = "",
+                  std::size_t max_width = 50);
 
-        virtual int get_current_value_display(char* buf, std::size_t size) const override;
+        static
+        std::unique_ptr<text_item>
+        create(const std::optional<std::string>& key,
+               const std::string& label,
+               const std::string& text = "",
+               std::size_t max_width = 50);
+
+
+        virtual int get_display(char* buf, std::size_t size) const override;
+
+        virtual int get_selected_display(char* buf, std::size_t size) const override;
 
         virtual void on_selected(bool is_selected) override;
 
-        virtual void on_button_pressed(WUPSConfigButtons buttons) override;
+        virtual void on_input(WUPSConfigSimplePadData input,
+                              WUPS_CONFIG_SIMPLE_INPUT repeat) override;
+
     };
 
-} // namespace wups
-
+} // namespace wups::config
 
 #endif

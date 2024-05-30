@@ -3,38 +3,58 @@
 #ifndef WUPSXX_INT_ITEM_HPP
 #define WUPSXX_INT_ITEM_HPP
 
-#include "base_item.hpp"
+#include <memory>
+
+#include "item.hpp"
+#include "var_watch.hpp"
 
 
-namespace wups {
+namespace wups::config {
 
-    struct int_item : base_item {
+    class int_item : public item {
 
-        int& variable;
-        int default_value = 0;
+    protected:
+
+        var_watch<int> variable;
+        const int default_value;
         int min_value;
         int max_value;
+        int fast_increment;
+        int slow_increment;
 
+    public:
 
-        int_item(const std::string& key,
-                 const std::string& name,
-                 int& variable,
-                 int min_value,
-                 int max_value);
+        int_item(const std::optional<std::string>& key,
+                 const std::string& label,
+                 int& variable, int default_value,
+                 int min_value, int max_value,
+                 int fast_increment = 10,
+                 int slow_increment = 1);
 
+        static
+        std::unique_ptr<int_item>
+        create(const std::optional<std::string>& key,
+               const std::string& label,
+               int& variable, int default_value,
+               int min_value, int max_value,
+               int fast_increment = 10,
+               int slow_increment = 1);
 
-        virtual int get_current_value_display(char* buf, std::size_t size) const override;
+        virtual int get_display(char* buf, std::size_t size) const override;
 
-        virtual int get_current_value_selected_display(char* buf, std::size_t size) const override;
+        virtual int get_selected_display(char* buf, std::size_t size) const override;
 
         virtual void restore() override;
 
-        virtual bool callback() override;
+        virtual void on_input(WUPSConfigSimplePadData input,
+                              WUPS_CONFIG_SIMPLE_INPUT repeat) override;
 
-        virtual void on_button_pressed(WUPSConfigButtons buttons) override;
+    private:
+
+        void on_changed();
 
     };
 
-} // namespace wups
+} // namespace wups::config
 
 #endif

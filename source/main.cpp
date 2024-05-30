@@ -1,20 +1,17 @@
 // SPDX-License-Identifier: MIT
 
-// standard headers
-#include <memory>               // make_unique()
+#include <exception>
 #include <thread>
 
-// WUT/WUPS headers
-#include <notifications/notifications.h>
 #include <wups.h>
-#include <whb/log_udp.h>
 
-// local headers
 #include "cfg.hpp"
 #include "config_screen.hpp"
-#include "preview_screen.hpp"
 #include "core.hpp"
-#include "wupsxx/config.hpp"
+#include "logging.hpp"
+#include "notify.hpp"
+#include "preview_screen.hpp"
+#include "wupsxx/category.hpp"
 
 
 // Important plugin information.
@@ -28,45 +25,64 @@ WUPS_USE_WUT_DEVOPTAB();
 WUPS_USE_STORAGE(PLUGIN_NAME);
 
 
+static WUPSConfigAPICallbackStatus open_config(WUPSConfigCategoryHandle root_handle);
+static void close_config();
+
+
 INITIALIZE_PLUGIN()
 {
-    WHBLogUdpInit();
-    NotificationModule_InitLibrary(); // Set up for notifications.
+    logging::initialize();
 
-    // Check if the plugin's settings have been saved before.
-    if (WUPS_OpenStorage() == WUPS_STORAGE_ERROR_SUCCESS) {
-        cfg::load();
-        WUPS_CloseStorage();
+    auto status = WUPSConfigAPI_Init({ .name = PLUGIN_NAME },
+                                     open_config,
+                                     close_config);
+    if (status != WUPSCONFIG_API_RESULT_SUCCESS) {
+        logging::printf("Init error: %s", WUPSConfigAPI_GetStatusStr(status));
+        return;
     }
+
+    cfg::load();
+    cfg::migrate_old_config();
 
     if (cfg::sync)
-        core::sync_clock(); // Update clock when plugin is loaded.
+        core::run(); // Update clock when plugin is loaded.
 }
 
 
-WUPS_GET_CONFIG()
+DEINITIALIZE_PLUGIN()
 {
-    if (WUPS_OpenStorage() != WUPS_STORAGE_ERROR_SUCCESS)
-        return 0;
+    logging::finalize();
+}
 
+
+static
+WUPSConfigAPICallbackStatus
+open_config(WUPSConfigCategoryHandle root_handle)
+{
     try {
-        auto root = std::make_unique<wups::config>(PLUGIN_NAME);
+        cfg::reload();
 
-        root->add(std::make_unique<config_screen>());
-        root->add(std::make_unique<preview_screen>());
+        wups::config::category root{root_handle};
 
-        return root.release()->handle;
+        root.add(make_config_screen());
+        root.add(make_preview_screen());
+
+        return WUPSCONFIG_API_CALLBACK_RESULT_SUCCESS;
     }
-    catch (...) {
-        return 0;
+    catch (std::exception& e) {
+        logging::printf("Error opening config: %s", e.what());
+        return WUPSCONFIG_API_CALLBACK_RESULT_ERROR;
     }
 }
 
 
-WUPS_CONFIG_CLOSED()
+static
+void
+close_config()
 {
-    std::jthread update_time_thread(core::sync_clock);
-    update_time_thread.detach(); // Update time when settings are closed.
+    cfg::save();
 
-    WUPS_CloseStorage(); // Save all changes.
+    // Update time when settings are closed.
+    std::jthread update_time_thread{core::run};
+    update_time_thread.detach();
 }
