@@ -14,11 +14,11 @@ WUMS_ROOT := $(DEVKITPRO)/wums
 WUT_ROOT := $(DEVKITPRO)/wut
 
 #-------------------------------------------------------------------------------
-# PLUGIN_NAME sets the name of the plugin
-# PLUGIN_DESCRIPTION sets the description of the plugin
-# PLUGIN_VERSION sets the version of the plugin
-# PLUGIN_AUTHOR sets the author of the plugin
-# PLUGIN_LICENSE sets the license of the plugin
+# PLUGIN_NAME sets the name of the plugin.
+# PLUGIN_DESCRIPTION sets the description of the plugin.
+# PLUGIN_VERSION sets the version of the plugin.
+# PLUGIN_AUTHOR sets the author of the plugin.
+# PLUGIN_LICENSE sets the license of the plugin.
 #-------------------------------------------------------------------------------
 PLUGIN_NAME	            :=	"Wii U Time Sync"
 PLUGIN_DESCRIPTION	    :=	"A plugin that synchronizes a Wii U\'s clock to the Internet."
@@ -27,11 +27,11 @@ PLUGIN_AUTHOR	        :=	"Nightkingale, Daniel K. O."
 PLUGIN_LICENSE	        :=	"MIT"
 
 #-------------------------------------------------------------------------------
-# TARGET is the name of the output
-# BUILD is the directory where object files & intermediate files will be placed
-# SOURCES is a list of directories containing source code
-# DATA is a list of directories containing data files
-# INCLUDES is a list of directories containing header files
+# TARGET is the name of the output.
+# BUILD is the directory where object files & intermediate files will be placed.
+# SOURCES is a list of directories containing source code.
+# DATA is a list of directories containing data files.
+# INCLUDES is a list of directories containing header files.
 #-------------------------------------------------------------------------------
 TARGET		:=	Wii_U_Time_Sync
 BUILD		:=	build
@@ -39,8 +39,19 @@ SOURCES		:=	source source/wupsxx
 DATA		:=	data
 INCLUDES	:=	include include/wupsxx
 
-# Be verbose by default.
-V ?= 1
+#-------------------------------------------------------------------------------
+# DEBUG sets the debug flag for the plugin.
+# This should be 0 for release builds, and 1 for development/workflow builds.
+# * The version string will be appended with the git hash.
+# * Compiling will produce verbose logs.
+#-------------------------------------------------------------------------------
+DEBUG := 0
+
+# This appends the git hash to the version string.
+ifeq ($(DEBUG), 1)
+	GIT_HASH := $(shell git rev-parse --short HEAD)
+	PLUGIN_VERSION := $(PLUGIN_VERSION)-$(GIT_HASH)
+endif
 
 #-------------------------------------------------------------------------------
 # options for code generation
@@ -129,7 +140,7 @@ all: $(BUILD)
 
 $(BUILD):
 	@[ -d $@ ] || mkdir -p $@
-	$(MAKE) -C $(BUILD) -f $(CURDIR)/Makefile V=$(V)
+	$(MAKE) -C $(BUILD) -f $(CURDIR)/Makefile V=$(DEBUG)
 
 #-------------------------------------------------------------------------------
 clean:
