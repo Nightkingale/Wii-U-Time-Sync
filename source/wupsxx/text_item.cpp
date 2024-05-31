@@ -10,8 +10,8 @@
 
 namespace {
 
-    const std::string left_glyph = NIN_GLYPH_BTN_DPAD_LEFT;
-    const std::string right_glyph = NIN_GLYPH_BTN_DPAD_RIGHT;
+    const std::string left_glyph = NIN_GLYPH_BTN_DPAD_LEFT " ";
+    const std::string right_glyph = " " NIN_GLYPH_BTN_DPAD_RIGHT;
 
 }
 
@@ -151,13 +151,15 @@ namespace wups::config {
 
         if (input.buttons_d & WUPS_CONFIG_BUTTON_LEFT ||
             repeat & WUPS_CONFIG_BUTTON_LEFT)
-            if (first > 0)
+            if (first > 0) {
                 --first;
+            }
 
         if (input.buttons_d & WUPS_CONFIG_BUTTON_RIGHT ||
             repeat & WUPS_CONFIG_BUTTON_RIGHT)
-            if (first < max_first)
+            if (first < max_first) {
                 ++first;
+            }
 
         if (input.buttons_d & WUPS_CONFIG_BUTTON_L)
             first = 0;
