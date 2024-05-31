@@ -53,7 +53,7 @@ namespace {
 
 
 clock_item::clock_item() :
-    text_item{{}, "Clock (Press " NIN_GLYPH_BTN_A ")", "", 48}
+    text_item{{}, "Clock (press " NIN_GLYPH_BTN_A ")", "", 48}
 {}
 
 

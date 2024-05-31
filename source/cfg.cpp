@@ -8,6 +8,7 @@
 
 
 using std::chrono::minutes;
+using std::chrono::milliseconds;
 
 using namespace std::literals;
 
@@ -39,24 +40,24 @@ namespace cfg {
 
 
     namespace defaults {
-        const bool        auto_tz      = false;
-        const int         msg_duration = 5;
-        const int         notify       = 0;
-        const std::string server       = "pool.ntp.org";
-        const bool        sync         = false;
-        const int         threads      = 4;
-        const int         tolerance    = 500;
+        const bool         auto_tz      = false;
+        const int          msg_duration = 5;
+        const int          notify       = 0;
+        const std::string  server       = "pool.ntp.org";
+        const bool         sync         = false;
+        const int          threads      = 4;
+        const milliseconds tolerance    = 500ms;
     }
 
 
-    bool        auto_tz      = defaults::auto_tz;
-    int         msg_duration = defaults::msg_duration;
-    int         notify       = defaults::notify;
-    std::string server       = defaults::server;
-    bool        sync         = defaults::sync;
-    int         threads      = defaults::threads;
-    int         tolerance    = defaults::tolerance;
-    minutes     utc_offset   = 0min;
+    bool         auto_tz      = defaults::auto_tz;
+    int          msg_duration = defaults::msg_duration;
+    int          notify       = defaults::notify;
+    std::string  server       = defaults::server;
+    bool         sync         = defaults::sync;
+    int          threads      = defaults::threads;
+    milliseconds tolerance    = defaults::tolerance;
+    minutes      utc_offset   = 0min;
 
 
     template<typename T>
@@ -81,6 +82,18 @@ namespace cfg {
             wups::storage::store<int>(key, variable.count());
         else
             variable = minutes{*val};
+    }
+
+
+    void
+    load_or_init(const std::string& key,
+                 milliseconds& variable)
+    {
+        auto val = wups::storage::load<int>(key);
+        if (!val)
+            wups::storage::store<int>(key, variable.count());
+        else
+            variable = milliseconds{*val};
     }
 
 
