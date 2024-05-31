@@ -36,7 +36,7 @@ make_preview_screen()
             si.name = name.get();
             cat.add(std::move(name));
 
-            auto correction = text_item::create({}, "┣ Correction:", "", 50);
+            auto correction = text_item::create({}, "┣ Correction:", "", 48);
             si.correction = correction.get();
             cat.add(std::move(correction));
 
