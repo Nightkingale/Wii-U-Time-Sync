@@ -20,7 +20,7 @@ using wups::config::text_item;
 wups::config::category
 make_preview_screen()
 {
-    wups::config::category cat{"Preview"};
+    wups::config::category cat{"Preview Time"};
 
     auto clock = clock_item::create();
     auto& server_infos = clock->server_infos;

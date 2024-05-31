@@ -44,10 +44,6 @@ make_config_screen()
                              cfg::defaults::msg_duration,
                              1, 30, 5));
 
-    cat.add(timezone_offset_item::create(cfg::key::utc_offset,
-                                         cfg::label::utc_offset,
-                                         cfg::utc_offset));
-
     cat.add(timezone_query_item::create());
 
     cat.add(bool_item::create(cfg::key::auto_tz,
@@ -56,22 +52,26 @@ make_config_screen()
                               cfg::defaults::auto_tz,
                               "yes", "no"));
 
+    cat.add(timezone_offset_item::create(cfg::key::utc_offset,
+                                         cfg::label::utc_offset,
+                                         cfg::utc_offset));
+
     cat.add(int_item::create(cfg::key::tolerance,
                              cfg::label::tolerance,
                              cfg::tolerance,
                              cfg::defaults::tolerance,
                              0, 5000, 100));
 
-    // show current NTP server address, no way to change it.
-    cat.add(text_item::create(cfg::key::server,
-                              cfg::label::server,
-                              cfg::server));
-
     cat.add(int_item::create(cfg::key::threads,
                              cfg::label::threads,
                              cfg::threads,
                              cfg::defaults::threads,
                              0, 8, 2));
+
+    // show current NTP server address, no way to change it.
+    cat.add(text_item::create(cfg::key::server,
+                              cfg::label::server,
+                              cfg::server));
 
     return cat;
 }
