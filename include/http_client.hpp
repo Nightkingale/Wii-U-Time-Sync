@@ -5,11 +5,11 @@
 
 #include <string>
 
+
 namespace http {
 
     std::string get(const std::string& url);
 
 } // namespace http
-
 
 #endif

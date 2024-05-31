@@ -1,36 +1,11 @@
 // SPDX-License-Identifier: MIT
 
 #include <bit>                  // endian, byteswap()
-#include <cmath>
+#include <cmath>                // ldexp()
+
+#include <sys/endian.h>         // be64toh(), htobe64()
 
 #include "ntp.hpp"
-
-
-#ifdef __WIIU__
-namespace {
-
-    // These can usually be found in <endian.h>, but devkitPPC/WUT does not provide them.
-
-    constexpr
-    std::uint64_t
-    htobe64(std::uint64_t x)
-    {
-        if constexpr (std::endian::native == std::endian::big)
-            return x;
-        else
-            return std::byteswap(x);
-    }
-
-
-    constexpr
-    std::uint64_t
-    be64toh(std::uint64_t x)
-    {
-        return htobe64(x);
-    }
-
-}
-#endif
 
 
 namespace ntp {
@@ -73,7 +48,6 @@ namespace ntp {
     }
 
 
-
     std::string
     to_string(packet::mode_flag m)
     {
@@ -98,7 +72,6 @@ namespace ntp {
             return "error";
         }
     }
-
 
 
     void
@@ -147,6 +120,5 @@ namespace ntp {
     {
         return static_cast<mode_flag>(lvm & 0b000'0111);
     }
-
 
 } // namespace ntp

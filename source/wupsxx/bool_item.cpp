@@ -1,43 +1,66 @@
 // SPDX-License-Identifier: MIT
 
 #include <cstdio>
-#include <stdexcept>
+#include <exception>
 
-#include "bool_item.hpp"
-#include "storage.hpp"
+#include "wupsxx/bool_item.hpp"
 
-#include "nintendo_glyphs.hpp"
+#include "logging.hpp"
+#include "nintendo_glyphs.h"
+#include "wupsxx/storage.hpp"
 
 
-namespace wups {
+namespace wups::config {
 
-    bool_item::bool_item(const std::string& key,
-                         const std::string& name,
-                         bool& variable) :
-        base_item{key, name},
+    bool_item::bool_item(const std::optional<std::string>& key,
+                         const std::string& label,
+                         bool& variable,
+                         bool default_value,
+                         const std::string& true_str,
+                         const std::string& false_str) :
+        item{key, label},
         variable(variable),
-        default_value{variable}
+        default_value{default_value},
+        true_str{true_str},
+        false_str{false_str}
     {}
 
 
+    std::unique_ptr<bool_item>
+    bool_item::create(const std::optional<std::string>& key,
+                      const std::string& label,
+                      bool& variable,
+                      bool default_value,
+                      const std::string& true_str,
+                      const std::string& false_str)
+    {
+        return std::make_unique<bool_item>(key, label,
+                                           variable, default_value,
+                                           true_str, false_str);
+    }
+
+
     int
-    bool_item::get_current_value_display(char* buf, std::size_t size)
+    bool_item::get_display(char* buf, std::size_t size)
         const
     {
         std::snprintf(buf, size, "%s",
-                      variable ? true_str.c_str() : false_str.c_str());
+                      *variable ? true_str.c_str() : false_str.c_str());
         return 0;
     }
 
 
     int
-    bool_item::get_current_value_selected_display(char* buf, std::size_t size)
+    bool_item::get_selected_display(char* buf, std::size_t size)
         const
     {
-        if (variable)
-            std::snprintf(buf, size, "%s %s  ", NIN_GLYPH_BTN_DPAD_LEFT, true_str.c_str());
-        else
-            std::snprintf(buf, size, "  %s %s", false_str.c_str(), NIN_GLYPH_BTN_DPAD_RIGHT);
+        const char* str = *variable ? true_str.c_str() : false_str.c_str();
+
+        std::snprintf(buf, size,
+                      "%s %s %s",
+                      NIN_GLYPH_BTN_DPAD_LEFT,
+                      str,
+                      NIN_GLYPH_BTN_DPAD_RIGHT);
         return 0;
     }
 
@@ -46,38 +69,41 @@ namespace wups {
     bool_item::restore()
     {
         variable = default_value;
-    }
-
-
-    bool
-    bool_item::callback()
-    {
-        if (key.empty())
-            return false;
-
-        try {
-            store(key, variable);
-            return true;
-        }
-        catch (...) {
-            return false;
-        }
+        on_changed();
     }
 
 
     void
-    bool_item::on_button_pressed(WUPSConfigButtons buttons)
+    bool_item::on_input(WUPSConfigSimplePadData input,
+                        WUPS_CONFIG_SIMPLE_INPUT repeat)
     {
-        base_item::on_button_pressed(buttons);
+        item::on_input(input, repeat);
 
-        if (buttons & WUPS_CONFIG_BUTTON_A)
-            variable = !variable;
+        // Allow toggling with A, left or right.
+        auto mask = WUPS_CONFIG_BUTTON_A | WUPS_CONFIG_BUTTON_LEFT | WUPS_CONFIG_BUTTON_RIGHT;
 
-        if (buttons & WUPS_CONFIG_BUTTON_LEFT)
-            variable = false;
+        if (input.buttons_d & mask)
+            variable = !*variable;
 
-        if (buttons & WUPS_CONFIG_BUTTON_RIGHT)
-            variable = true;
+        on_changed();
     }
 
-} // namespace wups
+
+    void
+    bool_item::on_changed()
+    {
+        if (!key)
+            return;
+        if (!variable.changed())
+            return;
+
+        try {
+            storage::store(*key, *variable);
+            variable.reset();
+        }
+        catch (std::exception& e) {
+            logging::printf("Error storing bool: %s", e.what());
+        }
+    }
+
+} // namespace wups::config

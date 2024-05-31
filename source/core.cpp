@@ -3,38 +3,33 @@
 #include <atomic>
 #include <chrono>
 #include <cmath>                // fabs()
-#include <cstdio>
+#include <cstdio>               // snprintf()
 #include <numeric>              // accumulate()
 #include <ranges>               // views::zip()
 #include <set>
-#include <stdexcept>
+#include <stdexcept>            // runtime_error
 #include <string>
 #include <thread>
 #include <vector>
 
-// WUT/WUPS headers
 #include <coreinit/time.h>
 #include <nn/ccr.h>             // CCRSysSetSystemTime()
 #include <nn/pdm.h>             // __OSSetAbsoluteSystemTime()
 
-// unix headers
-#include <sys/select.h>         // select()
-#include <sys/socket.h>         // connect(), send(), recv()
-
 #include "core.hpp"
 
 #include "cfg.hpp"
-#include "limited_async.hpp"
-#include "log.hpp"
+#include "logging.hpp"
+#include "net/addrinfo.hpp"
+#include "net/socket.hpp"
+#include "notify.hpp"
 #include "ntp.hpp"
+#include "thread_pool.hpp"
 #include "utc.hpp"
 #include "utils.hpp"
 
 
 using namespace std::literals;
-
-
-std::counting_semaphore<> async_limit{5}; // limit to 5 threads
 
 
 namespace {
@@ -59,7 +54,6 @@ namespace {
     {
         return utc::timestamp{static_cast<double>(t) - epoch_diff};
     }
-
 
 
     std::string
@@ -91,30 +85,30 @@ namespace core {
 
     // Note: hardcoded for IPv4, the Wii U doesn't have IPv6.
     std::pair<double, double>
-    ntp_query(struct sockaddr_in address)
+    ntp_query(net::address address)
     {
         using std::to_string;
 
-        utils::socket_guard s{PF_INET, SOCK_DGRAM, IPPROTO_UDP};
-
-        connect(s.fd, reinterpret_cast<struct sockaddr*>(&address), sizeof address);
+        net::socket sock{net::socket::type::udp};
+        sock.connect(address);
 
         ntp::packet packet;
         packet.version(4);
         packet.mode(ntp::packet::mode_flag::client);
 
 
-        unsigned num_send_tries = 0;
+        unsigned send_attempts = 0;
+        const unsigned max_send_attempts = 4;
     try_again_send:
         auto t1 = to_ntp(utc::now());
         packet.transmit_time = t1;
 
-        if (send(s.fd, &packet, sizeof packet, 0) == -1) {
-            int e = errno;
-            if (e != ENOMEM)
-                throw std::runtime_error{"send() failed: "s
-                                         + utils::errno_to_string(e)};
-            if (++num_send_tries < 4) {
+        auto send_status = sock.try_send(&packet, sizeof packet);
+        if (!send_status) {
+            auto& e = send_status.error();
+            if (e.code() != std::errc::not_enough_memory)
+                throw e;
+            if (++send_attempts < max_send_attempts) {
                 std::this_thread::sleep_for(100ms);
                 goto try_again_send;
             } else
@@ -122,35 +116,33 @@ namespace core {
         }
 
 
-        struct timeval timeout = { 4, 0 };
-        fd_set read_set;
-        unsigned num_select_tries = 0;
-    try_again_select:
-        FD_ZERO(&read_set);
-        FD_SET(s.fd, &read_set);
-
-        if (select(s.fd + 1, &read_set, nullptr, nullptr, &timeout) == -1) {
-            // Wii U's OS can only handle 16 concurrent select() calls,
+        unsigned poll_attempts = 0;
+        const unsigned max_poll_attempts = 4;
+    try_again_poll:
+        auto readable_status = sock.try_is_readable(4s);
+        if (!readable_status) {
+            // Wii U OS can only handle 16 concurrent select()/poll() calls,
             // so we may need to try again later.
-            int e = errno;
-            if (e != ENOMEM)
-                throw std::runtime_error{"select() failed: "s
-                                         + utils::errno_to_string(e)};
-            if (++num_select_tries < 4) {
+            auto& e = readable_status.error();
+            if (e.code() != std::errc::not_enough_memory)
+                throw e;
+            if (++poll_attempts < max_poll_attempts) {
                 std::this_thread::sleep_for(10ms);
-                goto try_again_select;
+                goto try_again_poll;
             } else
-                throw std::runtime_error{"No resources for select(), too many retries!"};
+                throw std::runtime_error{"No resources for poll(), too many retries!"};
         }
 
-        if (!FD_ISSET(s.fd, &read_set))
+        if (!*readable_status)
             throw std::runtime_error{"Timeout reached!"};
 
         // Measure the arrival time as soon as possible.
         auto t4 = to_ntp(utc::now());
 
-        if (recv(s.fd, &packet, sizeof packet, 0) < 48)
+        if (sock.recv(&packet, sizeof packet) < 48)
             throw std::runtime_error{"Invalid NTP response!"};
+
+        sock.close(); // close it early
 
         auto v = packet.version();
         if (v < 3 || v > 4)
@@ -222,83 +214,113 @@ namespace core {
 
 
     bool
-    apply_clock_correction(double correction)
+    apply_clock_correction(double seconds)
     {
-        OSTime correction_ticks = correction * OSTimerClockSpeed;
+        // OSTime before = OSGetSystemTime();
+
+        OSTime ticks = seconds * OSTimerClockSpeed;
 
         nn::pdm::NotifySetTimeBeginEvent();
 
-        OSTime now = OSGetTime();
-        OSTime corrected = now + correction_ticks;
+        // OSTime ccr_start = OSGetSystemTime();
+        bool success1 = !CCRSysSetSystemTime(OSGetTime() + ticks);
+        // OSTime ccr_finish = OSGetSystemTime();
 
-        if (CCRSysSetSystemTime(corrected)) {
-            nn::pdm::NotifySetTimeEndEvent();
-            return false;
-        }
-
-        bool res = __OSSetAbsoluteSystemTime(corrected);
+        // OSTime abs_start = OSGetSystemTime();
+        bool success2 = __OSSetAbsoluteSystemTime(OSGetTime() + ticks);
+        // OSTime abs_finish = OSGetSystemTime();
 
         nn::pdm::NotifySetTimeEndEvent();
 
-        return res;
+        // logging::printf("CCRSysSetSystemTime() took %f ms",
+        //                 1000.0 * (ccr_finish - ccr_start) / OSTimerClockSpeed);
+        // logging::printf("__OSSetAbsoluteSystemTime() took %f ms",
+        //                 1000.0 * (abs_finish - abs_start) / OSTimerClockSpeed);
+
+        // OSTime after = OSGetSystemTime();
+        // logging::printf("Total time: %f ms",
+        //                 1000.0 * (after - before) / OSTimerClockSpeed);
+
+        return success1 && success2;
     }
 
 
-
     void
-    sync_clock()
+    run()
     {
         using utils::seconds_to_human;
 
         if (!cfg::sync)
             return;
 
-        static std::atomic<bool> executing = false;
+        // ensure notification is initialized if needed
+        notify::guard notify_guard{cfg::notify > 0};
 
-        utils::exec_guard guard{executing};
-        if (!guard.guarded) {
+        static std::atomic<bool> executing = false;
+        utils::exec_guard exec_guard{executing};
+        if (!exec_guard.guarded) {
             // Another thread is already executing this function.
-            report_info("Skipping NTP task: already in progress.");
+            notify::info(notify::level::verbose,
+                         "Skipping NTP task: operation already in progress.");
             return;
         }
 
-        cfg::update_utc_offset();
+
+        if (cfg::auto_tz) {
+            try {
+                auto [name, offset] = utils::fetch_timezone();
+                if (offset != cfg::get_utc_offset()) {
+                    cfg::set_utc_offset(offset);
+                    notify::info(notify::level::verbose,
+                                 "Auto-updated timezone to " + name +
+                                 "(" + utils::tz_offset_to_string(offset) + ")");
+                }
+            }
+            catch (std::exception& e) {
+                notify::error(notify::level::verbose,
+                              "Failed to auto-update timezone: "s + e.what());
+            }
+        }
+
+        thread_pool pool(cfg::threads);
+
 
         std::vector<std::string> servers = utils::split(cfg::server, " \t,;");
 
-        utils::addrinfo_query query = {
-            .family = AF_INET,
-            .socktype = SOCK_DGRAM,
-            .protocol = IPPROTO_UDP
-        };
-
         // First, resolve all the names, in parallel.
-        // Some IP addresses might be duplicated when we use *.pool.ntp.org.
-        std::set<struct sockaddr_in,
-                 utils::less_sockaddr_in> addresses;
+        // Some IP addresses might be duplicated when we use "pool.ntp.org".
+        std::set<net::address> addresses;
         {
-            using info_vec = std::vector<utils::addrinfo_result>;
+            // nested scope so the futures vector is destroyed
+            using info_vec = std::vector<net::addrinfo::result>;
             std::vector<std::future<info_vec>> futures(servers.size());
 
+            net::addrinfo::hints opts{ .type = net::socket::type::udp };
             // Launch DNS queries asynchronously.
             for (auto [fut, server] : std::views::zip(futures, servers))
-                fut = limited_async(utils::get_address_info, server, "123", query);
+                fut = pool.submit(net::addrinfo::lookup, server, "123"s, opts);
 
             // Collect all future results.
             for (auto& fut : futures)
                 try {
                     for (auto info : fut.get())
-                        addresses.insert(info.address);
+                        addresses.insert(info.addr);
                 }
                 catch (std::exception& e) {
-                    report_error(e.what());
+                    notify::error(notify::level::verbose, e.what());
                 }
+        }
+
+        if (addresses.empty()) {
+            // Probably a mistake in config, or network failure.
+            notify::error(notify::level::normal, "No NTP address could be used.");
+            return;
         }
 
         // Launch NTP queries asynchronously.
         std::vector<std::future<std::pair<double, double>>> futures(addresses.size());
         for (auto [fut, address] : std::views::zip(futures, addresses))
-            fut = limited_async(ntp_query, address);
+            fut = pool.submit(ntp_query, address);
 
         // Collect all future results.
         std::vector<double> corrections;
@@ -306,17 +328,20 @@ namespace core {
             try {
                 auto [correction, latency] = fut.get();
                 corrections.push_back(correction);
-                report_info(utils::to_string(address)
-                            + ": correction = "s + seconds_to_human(correction)
-                            + ", latency = "s + seconds_to_human(latency));
+                notify::info(notify::level::verbose,
+                             to_string(address)
+                             + ": correction = "s + seconds_to_human(correction, true)
+                             + ", latency = "s + seconds_to_human(latency));
             }
             catch (std::exception& e) {
-                report_error(utils::to_string(address) + ": "s + e.what());
+                notify::error(notify::level::verbose,
+                              to_string(address) + ": "s + e.what());
             }
 
 
         if (corrections.empty()) {
-            report_error("No NTP server could be used!");
+            notify::error(notify::level::normal,
+                          "No NTP server could be used!");
             return;
         }
 
@@ -326,17 +351,21 @@ namespace core {
             / corrections.size();
 
         if (std::fabs(avg_correction) * 1000 <= cfg::tolerance) {
-            report_success("Tolerating clock drift (correction is only "
-                           + seconds_to_human(avg_correction) + ")."s);
+            notify::success(notify::level::verbose,
+                            "Tolerating clock drift (correction is only "
+                            + seconds_to_human(avg_correction, true) + ")."s);
             return;
         }
 
         if (cfg::sync) {
             if (!apply_clock_correction(avg_correction)) {
-                report_error("Failed to set system clock!");
+                // This error woudl be so bad, the user should always know about it.
+                notify::error(notify::level::quiet,
+                              "Failed to set system clock!");
                 return;
             }
-            report_success("Clock corrected by " + seconds_to_human(avg_correction));
+            notify::success(notify::level::normal,
+                            "Clock corrected by " + seconds_to_human(avg_correction, true));
         }
 
     }

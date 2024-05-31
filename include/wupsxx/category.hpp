@@ -8,28 +8,34 @@
 
 #include <wups.h>
 
-#include "base_item.hpp"
+#include "item.hpp"
 
 
-namespace wups {
+namespace wups::config {
 
-    struct category {
+    class category final {
 
-        WUPSConfigCategoryHandle handle = 0;
+        WUPSConfigCategoryHandle handle;
+        bool own_handle; // if true, will destroy the handle in the destructor
 
-        category(const std::string& name);
+    public:
 
-        category(category&&) = delete;
+        // This constructor does not take ownership of the handle.
+        category(WUPSConfigCategoryHandle handle);
+
+        category(const std::string& label);
+        category(category&& other) noexcept;
 
         ~category();
 
-        void add(std::unique_ptr<base_item>&& item);
+        void release();
 
-        void add(base_item* item);
+        void add(std::unique_ptr<item>&& item);
+
+        void add(category&& child);
 
     };
 
 } // namespace wups
-
 
 #endif

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 
-#ifndef NINTENDO_GLYPHS_HPP
-#define NINTENDO_GLYPHS_HPP
+#ifndef NINTENDO_GLYPHS_H
+#define NINTENDO_GLYPHS_H
 
 #define NIN_GLYPH_BTN_A    "\uE000"
 #define NIN_GLYPH_BTN_B    "\uE001"

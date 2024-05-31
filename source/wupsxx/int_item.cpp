@@ -2,59 +2,76 @@
 
 #include <algorithm>            // clamp()
 #include <cstdio>
-#include <stdexcept>
+#include <exception>
 
 #include "wupsxx/int_item.hpp"
+
+#include "logging.hpp"
+#include "nintendo_glyphs.h"
 #include "wupsxx/storage.hpp"
 
-#include "nintendo_glyphs.hpp"
 
+namespace wups::config {
 
-namespace wups {
-
-
-    int_item::int_item(const std::string& key,
-                       const std::string& name,
-                       int& variable,
-                       int min_value,
-                       int max_value) :
-        base_item{key, name},
+    int_item::int_item(const std::optional<std::string>& key,
+                       const std::string& label,
+                       int& variable, int default_value,
+                       int min_value, int max_value,
+                       int fast_increment, int slow_increment) :
+        item{key, label},
         variable(variable),
-        default_value{variable},
+        default_value{default_value},
         min_value{min_value},
-        max_value{max_value}
+        max_value{max_value},
+        fast_increment{fast_increment},
+        slow_increment{slow_increment}
     {}
 
 
+    std::unique_ptr<int_item>
+    int_item::create(const std::optional<std::string>& key,
+                     const std::string& label,
+                     int& variable, int default_value,
+                     int min_value, int max_value,
+                     int fast_increment, int slow_increment)
+    {
+        return std::make_unique<int_item>(key, label,
+                                          variable, default_value,
+                                          min_value, max_value,
+                                          fast_increment, slow_increment);
+    }
+
+
     int
-    int_item::get_current_value_display(char* buf, std::size_t size)
+    int_item::get_display(char* buf, std::size_t size)
         const
     {
-        std::snprintf(buf, size, "%d", variable);
+        std::snprintf(buf, size, "%d", *variable);
         return 0;
     }
 
 
     int
-    int_item::get_current_value_selected_display(char* buf, std::size_t size)
+    int_item::get_selected_display(char* buf, std::size_t size)
         const
     {
-        const char* left = "";
-        const char* right = "";
+        const char* slow_left = "";
+        const char* slow_right = "";
         const char* fast_left = "";
         const char* fast_right = "";
-        if (variable > min_value) {
-            left = NIN_GLYPH_BTN_DPAD_LEFT;
+        if (*variable > min_value) {
+            slow_left = NIN_GLYPH_BTN_DPAD_LEFT " ";
             fast_left = NIN_GLYPH_BTN_L;
-        } if (variable < max_value) {
-            right = NIN_GLYPH_BTN_DPAD_RIGHT;
+        } if (*variable < max_value) {
+            slow_right = " " NIN_GLYPH_BTN_DPAD_RIGHT;
             fast_right = NIN_GLYPH_BTN_R;
         }
-        std::snprintf(buf, size, "%s%s %d %s%s",
+        std::snprintf(buf, size,
+                      "%s%s%d%s%s",
                       fast_left,
-                      left,
-                      variable,
-                      right,
+                      slow_left,
+                      *variable,
+                      slow_right,
                       fast_right);
         return 0;
     }
@@ -64,43 +81,53 @@ namespace wups {
     int_item::restore()
     {
         variable = default_value;
-    }
-
-
-    bool
-    int_item::callback()
-    {
-        if (key.empty())
-            return false;
-
-        try {
-            store(key, variable);
-            return true;
-        }
-        catch (...) {
-            return false;
-        }
+        on_changed();
     }
 
 
     void
-    int_item::on_button_pressed(WUPSConfigButtons buttons)
+    int_item::on_input(WUPSConfigSimplePadData input,
+                       WUPS_CONFIG_SIMPLE_INPUT repeat)
     {
-        base_item::on_button_pressed(buttons);
+        item::on_input(input, repeat);
 
-        if (buttons & WUPS_CONFIG_BUTTON_LEFT)
-            --variable;
+        if (input.buttons_d & WUPS_CONFIG_BUTTON_LEFT ||
+            repeat & WUPS_CONFIG_BUTTON_LEFT)
+            variable -= slow_increment;
 
-        if (buttons & WUPS_CONFIG_BUTTON_RIGHT)
-            ++variable;
+        if (input.buttons_d & WUPS_CONFIG_BUTTON_RIGHT ||
+            repeat & WUPS_CONFIG_BUTTON_RIGHT)
+            variable += slow_increment;
 
-        if (buttons & WUPS_CONFIG_BUTTON_L)
-            variable -= 50;
+        if (input.buttons_d & WUPS_CONFIG_BUTTON_L ||
+            repeat & WUPS_CONFIG_BUTTON_L)
+            variable -= fast_increment;
 
-        if (buttons & WUPS_CONFIG_BUTTON_R)
-            variable += 50;
+        if (input.buttons_d & WUPS_CONFIG_BUTTON_R ||
+            repeat & WUPS_CONFIG_BUTTON_R)
+            variable += fast_increment;
 
-        variable = std::clamp(variable, min_value, max_value);
+        variable = std::clamp(*variable, min_value, max_value);
+
+        on_changed();
     }
 
-} // namespace wups
+
+    void
+    int_item::on_changed()
+    {
+        if (!key)
+            return;
+        if (!variable.changed())
+            return;
+
+        try {
+            storage::store(*key, *variable);
+            variable.reset();
+        }
+        catch (std::exception& e) {
+            logging::printf("Error storing int: %s", e.what());
+        }
+    }
+
+} // namespace wups::config

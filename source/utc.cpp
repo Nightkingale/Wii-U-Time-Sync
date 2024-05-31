@@ -4,12 +4,10 @@
 
 #include "utc.hpp"
 
+#include "cfg.hpp"
+
 
 namespace utc {
-
-
-    double timezone_offset = 0;
-
 
     static
     double
@@ -23,8 +21,8 @@ namespace utc {
     now()
         noexcept
     {
-        return timestamp{ local_time() - timezone_offset };
+        auto offset_seconds = duration_cast<std::chrono::seconds>(cfg::get_utc_offset());
+        return timestamp{ local_time() - offset_seconds.count() };
     }
-
 
 } // namespace utc
