@@ -9,8 +9,8 @@
 
 namespace {
     const char* value_str[] = {
-        "no",
-        "yes",
+        "quiet",
+        "normal",
         "verbose"
     };
 
