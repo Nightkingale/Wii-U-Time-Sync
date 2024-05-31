@@ -42,7 +42,7 @@ make_config_screen()
                              cfg::label::msg_duration,
                              cfg::msg_duration,
                              cfg::defaults::msg_duration,
-                             0, 30, 5));
+                             1, 30, 5));
 
     cat.add(timezone_offset_item::create(cfg::key::utc_offset,
                                          cfg::label::utc_offset,
