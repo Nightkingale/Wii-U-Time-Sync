@@ -24,7 +24,7 @@ If the program is placed correctly on an SD card, Wii U Time Sync will be listed
 * `Configuration -> Tolerance (milliseconds)`: The amount of milliseconds in which Wii U Time Sync will tolerate differences, `500` by default.
 * `Configuration -> Background Threads`: Controls how many servers are queried at once, `4` by default.
     * If you stick to the default server, you do not need to set this to more than `4`.
-* `Configuration -> NTP Servers`: The list of NTP servers in which the plugin connects to, only `ntp.pool.org` by default.
+* `Configuration -> NTP Servers`: The list of NTP servers in which the plugin connects to, only `pool.ntp.org` by default.
     * This cannot be edited on the console. However, you can edit the Wii U Time Sync configuration file on a computer to adjust the default server, or add more.
         * The configuration file: `wiiu/environments/aroma/plugins/config/Wii U Time Sync.json`
         * An example edit: `"server": "pool.ntp.org time.windows.com",`
