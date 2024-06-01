@@ -32,7 +32,7 @@ namespace cfg {
         const char* notify       = "Show Notifications";
         const char* server       = "NTP Servers";
         const char* sync         = "Syncing Enabled";
-        const char* threads      = "Background threads";
+        const char* threads      = "Background Threads";
         const char* tolerance    = "Tolerance (milliseconds)";
         const char* utc_offset   = "UTC Offset";
     }

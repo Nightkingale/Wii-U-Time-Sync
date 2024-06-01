@@ -9,6 +9,9 @@
 #include "http_client.hpp"
 
 
+using namespace std::literals;
+
+
 namespace utils {
 
     std::string
@@ -98,9 +101,10 @@ namespace utils {
     tz_offset_to_string(std::chrono::minutes offset)
     {
         char buf[32];
-        int hours = offset.count() / 60;
+        char sign = offset < 0min ? '-' : '+';
+        int hours = std::abs(offset.count() / 60);
         int minutes = std::abs(offset.count() % 60);
-        std::snprintf(buf, sizeof buf, "%+03d:%02d", hours, minutes);
+        std::snprintf(buf, sizeof buf, "%c%02d:%02d", sign, hours, minutes);
         return buf;
     }
 

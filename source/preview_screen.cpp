@@ -20,7 +20,7 @@ using wups::config::text_item;
 wups::config::category
 make_preview_screen()
 {
-    wups::config::category cat{"Preview"};
+    wups::config::category cat{"Preview Time"};
 
     auto clock = clock_item::create();
     auto& server_infos = clock->server_infos;
@@ -36,7 +36,7 @@ make_preview_screen()
             si.name = name.get();
             cat.add(std::move(name));
 
-            auto correction = text_item::create({}, "┣ Correction:", "", 50);
+            auto correction = text_item::create({}, "┣ Correction:", "", 48);
             si.correction = correction.get();
             cat.add(std::move(correction));
 

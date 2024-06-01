@@ -22,7 +22,7 @@ WUT_ROOT := $(DEVKITPRO)/wut
 #-------------------------------------------------------------------------------
 PLUGIN_NAME        := Wii U Time Sync
 PLUGIN_DESCRIPTION := A plugin that synchronizes the system clock to the Internet.
-PLUGIN_VERSION     := v2.1.1
+PLUGIN_VERSION     := v3.0.0
 PLUGIN_AUTHOR      := Nightkingale, Daniel K. O.
 PLUGIN_LICENSE     := MIT
 
