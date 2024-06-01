@@ -38,11 +38,9 @@ make_config_screen()
                                    cfg::notify,
                                    cfg::defaults::notify));
 
-    cat.add(int_item::create(cfg::key::msg_duration,
-                             cfg::label::msg_duration,
-                             cfg::msg_duration,
-                             cfg::defaults::msg_duration,
-                             1, 30, 5));
+    cat.add(timezone_offset_item::create(cfg::key::utc_offset,
+                                         cfg::label::utc_offset,
+                                         cfg::utc_offset));
 
     cat.add(timezone_query_item::create());
 
@@ -52,9 +50,11 @@ make_config_screen()
                               cfg::defaults::auto_tz,
                               "yes", "no"));
 
-    cat.add(timezone_offset_item::create(cfg::key::utc_offset,
-                                         cfg::label::utc_offset,
-                                         cfg::utc_offset));
+    cat.add(int_item::create(cfg::key::msg_duration,
+                             cfg::label::msg_duration,
+                             cfg::msg_duration,
+                             cfg::defaults::msg_duration,
+                             1, 30, 5));
 
     cat.add(int_item::create(cfg::key::tolerance,
                              cfg::label::tolerance,
