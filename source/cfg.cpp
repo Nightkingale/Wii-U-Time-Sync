@@ -41,7 +41,7 @@ namespace cfg {
     namespace defaults {
         const bool        auto_tz      = false;
         const int         msg_duration = 5;
-        const int         notify       = 0;
+        const int         notify       = 1;
         const std::string server       = "pool.ntp.org";
         const bool        sync         = false;
         const int         threads      = 4;
