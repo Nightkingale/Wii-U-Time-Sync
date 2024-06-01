@@ -15,7 +15,7 @@ If the program is placed correctly on an SD card, Wii U Time Sync will be listed
 * `Configuration -> Syncing Enabled`: Enables syncing to the Internet, `false` by default.
 * `Configuration -> Show Notifications`: Shows a notification whenever Wii U Time Sync adjusts the clock, `quiet` by default.
     * `quiet` means that no notifications will appear on success.
-    * `normal` means that success notifications will appear if the clock is set.
+    * `normal` means that only success or failure notifications will appear, but no others.
     * `verbose` means that all notifications (statistics and such) will appear, useful for debugging.
 * `Configuration -> Time Offset (UTC)`: The amount of time to add/subtract from the coordinated universal time, `+00:00` by default.
 * `Configuration -> Detect Timezone (press A)`: Uses the IP Geolocation API to guess the timezone, setting the offset accordingly.
