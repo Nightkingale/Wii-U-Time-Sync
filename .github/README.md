@@ -13,7 +13,7 @@ If the program is placed correctly on an SD card, Wii U Time Sync will be listed
 
 * If Wii U Time Sync doesn't show up in the Wii U Plugin System Config Menu, confirm you placed the WPS file on your SD card correctly and restart your console.
 * `Configuration -> Syncing Enabled`: Enables syncing to the Internet, `off` by default.
-* `Configuration -> Show Notifications`: Shows a notification whenever Wii U Time Sync adjusts the clock, `quiet` by default.
+* `Configuration -> Show Notifications`: Shows a notification whenever Wii U Time Sync adjusts the clock, `normal` by default.
     * `quiet` means that no notifications will appear on success.
     * `normal` means that only success or failure notifications will appear, but no others.
     * `verbose` means that all notifications (statistics and such) will appear, useful for debugging.
