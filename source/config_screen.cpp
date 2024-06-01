@@ -31,7 +31,7 @@ make_config_screen()
                               cfg::label::sync,
                               cfg::sync,
                               cfg::defaults::sync,
-                              "true", "false"));
+                              "on", "off"));
 
     cat.add(verbosity_item::create(cfg::key::notify,
                                    cfg::label::notify,
@@ -48,7 +48,7 @@ make_config_screen()
                               cfg::label::auto_tz,
                               cfg::auto_tz,
                               cfg::defaults::auto_tz,
-                              "true", "false"));
+                              "on", "off"));
 
     cat.add(int_item::create(cfg::key::msg_duration,
                              cfg::label::msg_duration,

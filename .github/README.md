@@ -12,14 +12,14 @@ A Wii U plugin file will be bundled with each release. It should be placed on yo
 If the program is placed correctly on an SD card, Wii U Time Sync will be listed in the Aroma environment's Wii U Plugin System Config Menu.
 
 * If Wii U Time Sync doesn't show up in the Wii U Plugin System Config Menu, confirm you placed the WPS file on your SD card correctly and restart your console.
-* `Configuration -> Syncing Enabled`: Enables syncing to the Internet, `false` by default.
+* `Configuration -> Syncing Enabled`: Enables syncing to the Internet, `off` by default.
 * `Configuration -> Show Notifications`: Shows a notification whenever Wii U Time Sync adjusts the clock, `quiet` by default.
     * `quiet` means that no notifications will appear on success.
     * `normal` means that only success or failure notifications will appear, but no others.
     * `verbose` means that all notifications (statistics and such) will appear, useful for debugging.
 * `Configuration -> Time Offset (UTC)`: The amount of time to add/subtract from the coordinated universal time, `+00:00` by default.
 * `Configuration -> Detect Timezone (press A)`: Uses the IP Geolocation API to guess the timezone, setting the offset accordingly.
-* `Configuration -> Auto-update Timezone`: Automatically utilizes the IP Geolocation API to set your offset accordingly, `false` by default.
+* `Configuration -> Auto-update Timezone`: Automatically utilizes the IP Geolocation API to set your offset accordingly, `off` by default.
 * `Configuration -> Notification Duration (seconds)`: The amount of seconds which notifications will appear on screen for, `5` by default.
 * `Configuration -> Tolerance (milliseconds)`: The amount of milliseconds in which Wii U Time Sync will tolerate differences, `250` by default.
 * `Configuration -> Background Threads`: Controls how many servers are queried at once, `4` by default.
