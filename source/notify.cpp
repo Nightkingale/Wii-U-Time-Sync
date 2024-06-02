@@ -101,7 +101,8 @@ namespace notify {
     guard::guard(bool init) :
         must_finalize{init}
     {
-        initialize();
+        if (init)
+            initialize();
     }
 
 

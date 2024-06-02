@@ -186,7 +186,7 @@ namespace core {
 
         // Detect the wraparound that will happen at the end of Era 0.
         constexpr dbl_seconds half_era{0x1.0p32};     // 2^32 seconds
-        constexpr dbl_seconds quarter_era{0x1.0p31}; // 2^31 seconds
+        constexpr dbl_seconds quarter_era{0x1.0p31};  // 2^31 seconds
         if (d4 < d1)
             d4 += half_era; // d4 += 2^32
         if (d3 < d2)
@@ -276,13 +276,13 @@ namespace core {
                 if (offset != cfg::utc_offset) {
                     cfg::set_and_store_utc_offset(offset);
                     notify::info(notify::level::verbose,
-                                 "Auto-updated timezone to " + name +
+                                 "Updated timezone to " + name +
                                  "(" + time_utils::tz_offset_to_string(offset) + ")");
                 }
             }
             catch (std::exception& e) {
                 notify::error(notify::level::verbose,
-                              "Failed to auto-update timezone: "s + e.what());
+                              "Failed to update timezone: "s + e.what());
             }
         }
 
@@ -350,10 +350,10 @@ namespace core {
             return;
         }
 
-        dbl_seconds total_cor = std::accumulate(corrections.begin(),
-                                                corrections.end(),
-                                                dbl_seconds{0});
-        dbl_seconds avg = total_cor / static_cast<double>(corrections.size());
+        dbl_seconds total = std::accumulate(corrections.begin(),
+                                            corrections.end(),
+                                            dbl_seconds{0});
+        dbl_seconds avg = total / static_cast<double>(corrections.size());
 
         if (abs(avg) <= cfg::tolerance) {
             notify::success(notify::level::verbose,

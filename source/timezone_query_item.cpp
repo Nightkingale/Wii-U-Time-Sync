@@ -12,8 +12,8 @@ using namespace std::literals;
 
 timezone_query_item::timezone_query_item() :
     wups::config::text_item{{},
-                            "Detect Timezone (press " NIN_GLYPH_BTN_A ")",
-                            "Using http://ip-api.com",
+                            "Detect Time Zone (press " NIN_GLYPH_BTN_A ")",
+                            "using http://ip-api.com",
                             30}
 {}
 

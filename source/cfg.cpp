@@ -31,14 +31,14 @@ namespace cfg {
 
 
     namespace label {
-        const char* auto_tz      = "Auto-update Timezone Offset";
-        const char* msg_duration = "Notification Duration (seconds)";
+        const char* auto_tz      = "Auto Update Time Zone";
+        const char* msg_duration = "Notification Duration";
         const char* notify       = "Show Notifications";
         const char* server       = "NTP Servers";
         const char* sync         = "Syncing Enabled";
         const char* threads      = "Background Threads";
         const char* tolerance    = "Tolerance (milliseconds)";
-        const char* utc_offset   = "UTC Offset";
+        const char* utc_offset   = "Time Offset (UTC)";
     }
 
 

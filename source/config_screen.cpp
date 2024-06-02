@@ -35,18 +35,16 @@ make_config_screen()
                               cfg::label::sync,
                               cfg::sync,
                               cfg::defaults::sync,
-                              "yes", "no"));
+                              "on", "off"));
 
     cat.add(verbosity_item::create(cfg::key::notify,
                                    cfg::label::notify,
                                    cfg::notify,
                                    cfg::defaults::notify));
 
-    cat.add(seconds_item::create(cfg::key::msg_duration,
-                                 cfg::label::msg_duration,
-                                 cfg::msg_duration,
-                                 cfg::defaults::msg_duration,
-                                 1s, 30s, 5s));
+    cat.add(timezone_offset_item::create(cfg::key::utc_offset,
+                                         cfg::label::utc_offset,
+                                         cfg::utc_offset));
 
     cat.add(timezone_query_item::create());
 
@@ -54,11 +52,13 @@ make_config_screen()
                               cfg::label::auto_tz,
                               cfg::auto_tz,
                               cfg::defaults::auto_tz,
-                              "yes", "no"));
+                              "on", "off"));
 
-    cat.add(timezone_offset_item::create(cfg::key::utc_offset,
-                                         cfg::label::utc_offset,
-                                         cfg::utc_offset));
+    cat.add(seconds_item::create(cfg::key::msg_duration,
+                                 cfg::label::msg_duration,
+                                 cfg::msg_duration,
+                                 cfg::defaults::msg_duration,
+                                 1s, 30s, 5s));
 
     cat.add(milliseconds_item::create(cfg::key::tolerance,
                                       cfg::label::tolerance,
