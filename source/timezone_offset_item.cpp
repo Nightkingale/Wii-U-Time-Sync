@@ -117,6 +117,6 @@ timezone_offset_item::on_changed()
         variable.reset();
     }
     catch (std::exception& e) {
-        logging::printf("Error storing timezone offset: %s", e.what());
+        logging::printf("Error storing time zone offset: %s", e.what());
     }
 }

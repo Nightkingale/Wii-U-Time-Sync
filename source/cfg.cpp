@@ -27,7 +27,7 @@ namespace cfg {
 
 
     namespace label {
-        const char* auto_tz      = "Auto-update Timezone";
+        const char* auto_tz      = "Auto Update Time Zone";
         const char* msg_duration = "Notification Duration (seconds)";
         const char* notify       = "Show Notifications";
         const char* server       = "NTP Servers";

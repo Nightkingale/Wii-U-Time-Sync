@@ -272,13 +272,13 @@ namespace core {
                 if (offset != cfg::get_utc_offset()) {
                     cfg::set_utc_offset(offset);
                     notify::info(notify::level::verbose,
-                                 "Auto-updated timezone to " + name +
+                                 "Auto-updated time zone to " + name +
                                  "(" + utils::tz_offset_to_string(offset) + ")");
                 }
             }
             catch (std::exception& e) {
                 notify::error(notify::level::verbose,
-                              "Failed to auto-update timezone: "s + e.what());
+                              "Failed to auto-update time zone: "s + e.what());
             }
         }
 
