@@ -52,15 +52,15 @@ timezone_offset_item::get_selected_display(char* buf, std::size_t size)
     const char* fast_left = "";
     const char* fast_right = "";
     if (*variable > -12h) {
-        slow_left = NIN_GLYPH_BTN_DPAD_LEFT;
+        slow_left = NIN_GLYPH_BTN_DPAD_LEFT " ";
         fast_left = NIN_GLYPH_BTN_L;
     } if (*variable < 14h) {
-        slow_right = NIN_GLYPH_BTN_DPAD_RIGHT;
+        slow_right = " " NIN_GLYPH_BTN_DPAD_RIGHT;
         fast_right = NIN_GLYPH_BTN_R;
     }
 
     auto str = utils::tz_offset_to_string(*variable);
-    std::snprintf(buf, size, "%s%s %s %s%s",
+    std::snprintf(buf, size, "%s%s" "%s" "%s%s",
                   fast_left, slow_left,
                   str.c_str(),
                   slow_right, fast_right);
