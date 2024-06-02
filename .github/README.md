@@ -5,7 +5,7 @@ A plugin that synchronizes a Wii U's clock to the Internet.
 Wii U Time Sync is a Wii U homebrew plugin for the Aroma environment. It allows the console to automatically synchronize its date and time through the Internet, similar to the feature found on the Nintendo Switch and other modern devices.
 
 ## Installation
-For convenience, it is recommended that you download Wii U Time Sync from the [Homebrew App Store](https://hb-app.store/wiiu/Wii-U-Time-Sync). Both are maintained by me, and I ensure that the mirror is updated instantaneously after a new release, so it will always be up-to-date.
+For convenience, it is recommended that you download Wii U Time Sync from the [Homebrew App Store](https://hb-app.store/wiiu/Wii-U-Time-Sync). Both are maintained by me, and I ensure that the mirror is updated instantaneously after a new release.
 
 <p align="center">
   <a href="https://hb-app.store/wiiu/Wii-U-Time-Sync">
