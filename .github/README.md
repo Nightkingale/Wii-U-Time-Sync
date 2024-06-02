@@ -18,7 +18,7 @@ If the program is placed correctly on an SD card, Wii U Time Sync will be listed
     * `normal` means that only success or failure notifications will appear, but no others.
     * `verbose` means that all notifications (statistics and such) will appear, useful for debugging.
 * `Configuration -> Time Offset (UTC)`: The amount of time to add/subtract from the coordinated universal time, `+00:00` by default.
-* `Configuration -> Detect Time Zone (press A)`: Uses the IP Geolocation API to guess the timezone, setting the offset accordingly.
+* `Configuration -> Detect Time Zone (press A)`: Uses the IP Geolocation API to guess the time zone, setting the offset accordingly.
 * `Configuration -> Auto Update Time Zone`: Automatically utilizes the IP Geolocation API to set your offset accordingly, `off` by default.
 * `Configuration -> Notification Duration (seconds)`: The amount of seconds which notifications will appear on screen for, `5` by default.
 * `Configuration -> Tolerance (milliseconds)`: The amount of milliseconds in which Wii U Time Sync will tolerate differences, `500` by default.
