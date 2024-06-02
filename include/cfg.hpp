@@ -34,7 +34,7 @@ namespace cfg {
 
     namespace defaults {
         extern const bool                      auto_tz;
-        extern const int                       msg_duration;
+        extern const std::chrono::seconds      msg_duration;
         extern const int                       notify;
         extern const std::string               server;
         extern const bool                      sync;
@@ -44,7 +44,7 @@ namespace cfg {
 
 
     extern bool                      auto_tz;
-    extern int                       msg_duration;
+    extern std::chrono::seconds      msg_duration;
     extern int                       notify;
     extern std::string               server;
     extern bool                      sync;
@@ -58,8 +58,7 @@ namespace cfg {
     void save();
     void migrate_old_config();
 
-    std::chrono::minutes get_utc_offset();
-    void set_utc_offset(std::chrono::minutes tz_offset);
+    void set_and_store_utc_offset(std::chrono::minutes tz_offset);
 
 } // namespace cfg
 

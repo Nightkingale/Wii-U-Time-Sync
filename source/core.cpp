@@ -2,7 +2,6 @@
 
 #include <atomic>
 #include <chrono>
-#include <cmath>                // fabs()
 #include <cstdio>               // snprintf()
 #include <numeric>              // accumulate()
 #include <ranges>               // views::zip()
@@ -25,19 +24,22 @@
 #include "notify.hpp"
 #include "ntp.hpp"
 #include "thread_pool.hpp"
+#include "time_utils.hpp"
 #include "utc.hpp"
 #include "utils.hpp"
 
 
 using namespace std::literals;
 
+using time_utils::dbl_seconds;
+
 
 namespace {
 
     // Difference from NTP (1900) to Wii U (2000) epochs.
     // There are 24 leap years in this period.
-    constexpr double seconds_per_day = 24 * 60 * 60;
-    constexpr double epoch_diff = seconds_per_day * (100 * 365 + 24);
+    constexpr dbl_seconds seconds_per_day{24 * 60 * 60};
+    constexpr dbl_seconds epoch_diff = seconds_per_day * (100 * 365 + 24);
 
 
     // Wii U -> NTP epoch.
@@ -52,7 +54,7 @@ namespace {
     utc::timestamp
     to_utc(ntp::timestamp t)
     {
-        return utc::timestamp{static_cast<double>(t) - epoch_diff};
+        return utc::timestamp{static_cast<dbl_seconds>(t) - epoch_diff};
     }
 
 
@@ -74,7 +76,7 @@ namespace {
     to_string(ntp::timestamp t)
     {
         auto ut = to_utc(t);
-        OSTime ticks = ut.value * OSTimerClockSpeed;
+        OSTime ticks = ut.value.count() * OSTimerClockSpeed;
         return ticks_to_string(ticks);
     }
 
@@ -84,7 +86,7 @@ namespace {
 namespace core {
 
     // Note: hardcoded for IPv4, the Wii U doesn't have IPv6.
-    std::pair<double, double>
+    std::pair<dbl_seconds, dbl_seconds>
     ntp_query(net::address address)
     {
         using std::to_string;
@@ -177,36 +179,38 @@ namespace core {
          * fractional bits in Era 0, and 20 fractional bits in Era 1 (starting in 2036). We
          * still have sub-microsecond resolution.
          */
-        double d1 = static_cast<double>(t1);
-        double d2 = static_cast<double>(t2);
-        double d3 = static_cast<double>(t3);
-        double d4 = static_cast<double>(t4);
+        auto d1 = static_cast<dbl_seconds>(t1);
+        auto d2 = static_cast<dbl_seconds>(t2);
+        auto d3 = static_cast<dbl_seconds>(t3);
+        auto d4 = static_cast<dbl_seconds>(t4);
 
         // Detect the wraparound that will happen at the end of Era 0.
+        constexpr dbl_seconds half_era{0x1.0p32};     // 2^32 seconds
+        constexpr dbl_seconds quarter_era{0x1.0p31}; // 2^31 seconds
         if (d4 < d1)
-            d4 += 0x1.0p32; // d4 += 2^32
+            d4 += half_era; // d4 += 2^32
         if (d3 < d2)
-            d3 += 0x1.0p32; // d3 += 2^32
+            d3 += half_era; // d3 += 2^32
 
-        double roundtrip = (d4 - d1) - (d3 - d2);
-        double latency = roundtrip / 2;
+        dbl_seconds roundtrip = (d4 - d1) - (d3 - d2);
+        dbl_seconds latency = roundtrip / 2.0;
 
         // t4 + correction = t3 + latency
-        double correction = d3 + latency - d4;
+        dbl_seconds correction = d3 + latency - d4;
 
         /*
          * If the local clock enters Era 1 ahead of NTP, we get a massive positive correction
          * because the local clock wrapped back to zero.
          */
-        if (correction > 0x1.0p31) // if correcting more than 68 years forward
-            correction -= 0x1.0p32;
+        if (correction > quarter_era) // if correcting more than 68 years forward
+            correction -= half_era;
 
         /*
          * If NTP enters Era 1 ahead of the local clock, we get a massive negative correction
          * because NTP wrapped back to zero.
          */
-        if (correction < -0x1.0p31) // if correcting more than 68 years backward
-            correction += 0x1.0p32;
+        if (correction < -quarter_era) // if correcting more than 68 years backward
+            correction += half_era;
 
         return { correction, latency };
     }
@@ -214,11 +218,11 @@ namespace core {
 
 
     bool
-    apply_clock_correction(double seconds)
+    apply_clock_correction(dbl_seconds seconds)
     {
         // OSTime before = OSGetSystemTime();
 
-        OSTime ticks = seconds * OSTimerClockSpeed;
+        OSTime ticks = seconds.count() * OSTimerClockSpeed;
 
         nn::pdm::NotifySetTimeBeginEvent();
 
@@ -248,7 +252,7 @@ namespace core {
     void
     run()
     {
-        using utils::seconds_to_human;
+        using time_utils::seconds_to_human;
 
         if (!cfg::sync)
             return;
@@ -269,11 +273,11 @@ namespace core {
         if (cfg::auto_tz) {
             try {
                 auto [name, offset] = utils::fetch_timezone();
-                if (offset != cfg::get_utc_offset()) {
-                    cfg::set_utc_offset(offset);
+                if (offset != cfg::utc_offset) {
+                    cfg::set_and_store_utc_offset(offset);
                     notify::info(notify::level::verbose,
                                  "Auto-updated timezone to " + name +
-                                 "(" + utils::tz_offset_to_string(offset) + ")");
+                                 "(" + time_utils::tz_offset_to_string(offset) + ")");
                 }
             }
             catch (std::exception& e) {
@@ -318,12 +322,13 @@ namespace core {
         }
 
         // Launch NTP queries asynchronously.
-        std::vector<std::future<std::pair<double, double>>> futures(addresses.size());
+        std::vector<std::future<std::pair<dbl_seconds, dbl_seconds>>>
+            futures(addresses.size());
         for (auto [fut, address] : std::views::zip(futures, addresses))
             fut = pool.submit(ntp_query, address);
 
         // Collect all future results.
-        std::vector<double> corrections;
+        std::vector<dbl_seconds> corrections;
         for (auto [address, fut] : std::views::zip(addresses, futures))
             try {
                 auto [correction, latency] = fut.get();
@@ -345,27 +350,27 @@ namespace core {
             return;
         }
 
-        double avg_correction = std::accumulate(corrections.begin(),
+        dbl_seconds total_cor = std::accumulate(corrections.begin(),
                                                 corrections.end(),
-                                                0.0)
-            / corrections.size();
+                                                dbl_seconds{0});
+        dbl_seconds avg = total_cor / static_cast<double>(corrections.size());
 
-        if (std::fabs(avg_correction) * 1000 <= cfg::tolerance) {
+        if (abs(avg) <= cfg::tolerance) {
             notify::success(notify::level::verbose,
                             "Tolerating clock drift (correction is only "
-                            + seconds_to_human(avg_correction, true) + ")."s);
+                            + seconds_to_human(avg, true) + ")."s);
             return;
         }
 
         if (cfg::sync) {
-            if (!apply_clock_correction(avg_correction)) {
+            if (!apply_clock_correction(avg)) {
                 // This error woudl be so bad, the user should always know about it.
                 notify::error(notify::level::quiet,
                               "Failed to set system clock!");
                 return;
             }
             notify::success(notify::level::normal,
-                            "Clock corrected by " + seconds_to_human(avg_correction, true));
+                            "Clock corrected by " + seconds_to_human(avg, true));
         }
 
     }

@@ -1,7 +1,5 @@
 // SPDX-License-Identifier: MIT
 
-#include <cmath>                // abs()
-#include <cstdio>               // snprintf()
 #include <stdexcept>            // runtime_error
 
 #include "utils.hpp"
@@ -13,31 +11,6 @@ using namespace std::literals;
 
 
 namespace utils {
-
-    std::string
-    seconds_to_human(double s, bool show_positive)
-    {
-        char buf[64];
-
-        if (std::abs(s) < 2) // less than 2 seconds
-            std::snprintf(buf, sizeof buf, "%.1f ms", 1000 * s);
-        else if (std::abs(s) < 2 * 60) // less than 2 minutes
-            std::snprintf(buf, sizeof buf, "%.1f s", s);
-        else if (std::abs(s) < 2 * 60 * 60) // less than 2 hours
-            std::snprintf(buf, sizeof buf, "%.1f min", s / 60);
-        else if (std::abs(s) < 2 * 24 * 60 * 60) // less than 2 days
-            std::snprintf(buf, sizeof buf, "%.1f hrs", s / (60 * 60));
-        else
-            std::snprintf(buf, sizeof buf, "%.1f days", s / (24 * 60 * 60));
-
-        std::string result = buf;
-
-        if (show_positive && s > 0)
-            result = "+" + result;
-
-        return result;
-    }
-
 
     std::vector<std::string>
     split(const std::string& input,
@@ -94,18 +67,6 @@ namespace utils {
 
         int tz_offset_min = std::stoi(tokens[1]) / 60;
         return {tokens[0], std::chrono::minutes{tz_offset_min}};
-    }
-
-
-    std::string
-    tz_offset_to_string(std::chrono::minutes offset)
-    {
-        char buf[32];
-        char sign = offset < 0min ? '-' : '+';
-        int hours = std::abs(offset.count() / 60);
-        int minutes = std::abs(offset.count() % 60);
-        std::snprintf(buf, sizeof buf, "%c%02d:%02d", sign, hours, minutes);
-        return buf;
     }
 
 } // namespace utils

@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-#include <cmath>                // fmax(), fmin()
+#include <cmath>                // max(), min()
 #include <exception>
 #include <vector>
 
@@ -11,36 +11,39 @@
 #include "logging.hpp"
 #include "net/addrinfo.hpp"
 #include "nintendo_glyphs.h"
+#include "time_utils.hpp"
 #include "utils.hpp"
 
-
-using wups::config::text_item;
-
 using namespace std::literals;
+
+using time_utils::dbl_seconds;
+using wups::config::text_item;
 
 
 namespace {
 
+    template<typename T>
     struct statistics {
-        double min = 0;
-        double max = 0;
-        double avg = 0;
+        T min = T{0};
+        T max = T{0};
+        T avg = T{0};
     };
 
 
-    statistics
-    get_statistics(const std::vector<double>& values)
+    template<typename T>
+    statistics<T>
+    get_statistics(const std::vector<T>& values)
     {
-        statistics result;
-        double total = 0;
+        statistics<T> result;
+        T total = T{0};
 
         if (values.empty())
             return result;
 
         result.min = result.max = values.front();
         for (auto x : values) {
-            result.min = std::fmin(result.min, x);
-            result.max = std::fmax(result.max, x);
+            result.min = std::min(result.min, x);
+            result.max = std::max(result.max, x);
             total += x;
         }
 
@@ -95,7 +98,7 @@ void
 clock_item::run()
 {
     using std::to_string;
-    using utils::seconds_to_human;
+    using time_utils::seconds_to_human;
 
     for (auto& [key, value] : server_infos) {
         value.name->text.clear();
@@ -107,7 +110,7 @@ clock_item::run()
 
     net::addrinfo::hints opts{ .type = net::socket::type::udp };
 
-    double total = 0;
+    dbl_seconds total = 0s;
     unsigned num_values = 0;
 
     for (const auto& server : servers) {
@@ -118,8 +121,8 @@ clock_item::run()
             si.name->text = to_string(infos.size())
                 + (infos.size() > 1 ? " addresses."s : " address."s);
 
-            std::vector<double> server_corrections;
-            std::vector<double> server_latencies;
+            std::vector<dbl_seconds> server_corrections;
+            std::vector<dbl_seconds> server_latencies;
             unsigned errors = 0;
 
             for (const auto& info : infos) {
@@ -164,7 +167,7 @@ clock_item::run()
     }
 
     if (num_values) {
-        double avg = total / num_values;
+        dbl_seconds avg = total / num_values;
         stats_str = ", needs "s + seconds_to_human(avg, true);
     } else
         stats_str = "";

@@ -9,6 +9,7 @@
 #include <wups/storage.h>
 
 #include "storage_error.hpp"
+#include "../time_utils.hpp"
 
 
 namespace wups::storage {
@@ -29,6 +30,17 @@ namespace wups::storage {
     }
 
 
+    template<time_utils::duration T>
+    std::expected<T, storage_error>
+    load(const std::string& key)
+    {
+        auto value = load<int>(key);
+        if (!value)
+            return std::unexpected{value.error()};
+        return T{*value};
+    }
+
+
     template<typename T>
     void
     store(const std::string& key, const T& value)
@@ -37,6 +49,14 @@ namespace wups::storage {
         if (status != WUPS_STORAGE_ERROR_SUCCESS)
             throw storage_error{"error storing key \"" + key + "\"",
                                 status};
+    }
+
+
+    template<time_utils::duration T>
+    void
+    store(const std::string& key, const T& value)
+    {
+        return store<int>(key, value.count());
     }
 
 
