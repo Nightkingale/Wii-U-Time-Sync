@@ -37,7 +37,7 @@ namespace cfg {
         const char* server       = "NTP Servers";
         const char* sync         = "Syncing Enabled";
         const char* threads      = "Background Threads";
-        const char* tolerance    = "Tolerance (milliseconds)";
+        const char* tolerance    = "Tolerance";
         const char* utc_offset   = "Time Offset (UTC)";
     }
 
