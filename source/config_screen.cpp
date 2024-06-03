@@ -3,20 +3,24 @@
 #include <chrono>
 #include <memory>               // make_unique()
 
-#include "wupsxx/bool_item.hpp"
-#include "wupsxx/int_item.hpp"
-#include "wupsxx/text_item.hpp"
-
 #include "config_screen.hpp"
 
 #include "cfg.hpp"
 #include "timezone_offset_item.hpp"
 #include "timezone_query_item.hpp"
 #include "verbosity_item.hpp"
+#include "wupsxx/bool_item.hpp"
+#include "wupsxx/duration_items.hpp"
+#include "wupsxx/int_item.hpp"
+#include "wupsxx/text_item.hpp"
+#include "wupsxx/numeric_item.hpp"
 
 
 using wups::config::bool_item;
 using wups::config::int_item;
+using wups::config::milliseconds_item;
+using wups::config::numeric_item;
+using wups::config::seconds_item;
 using wups::config::text_item;
 
 using namespace std::literals;
@@ -50,17 +54,17 @@ make_config_screen()
                               cfg::defaults::auto_tz,
                               "on", "off"));
 
-    cat.add(int_item::create(cfg::key::msg_duration,
-                             cfg::label::msg_duration,
-                             cfg::msg_duration,
-                             cfg::defaults::msg_duration,
-                             1, 30, 5));
+    cat.add(seconds_item::create(cfg::key::msg_duration,
+                                 cfg::label::msg_duration,
+                                 cfg::msg_duration,
+                                 cfg::defaults::msg_duration,
+                                 1s, 30s, 5s));
 
-    cat.add(int_item::create(cfg::key::tolerance,
-                             cfg::label::tolerance,
-                             cfg::tolerance,
-                             cfg::defaults::tolerance,
-                             0, 5000, 100));
+    cat.add(milliseconds_item::create(cfg::key::tolerance,
+                                      cfg::label::tolerance,
+                                      cfg::tolerance,
+                                      cfg::defaults::tolerance,
+                                      0ms, 5000ms, 100ms));
 
     cat.add(int_item::create(cfg::key::threads,
                              cfg::label::threads,

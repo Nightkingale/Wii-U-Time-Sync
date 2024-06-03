@@ -3,11 +3,15 @@
 #include "cfg.hpp"
 
 #include "logging.hpp"
+#include "time_utils.hpp"
 #include "utils.hpp"
 #include "wupsxx/storage.hpp"
 
 
+using std::chrono::hours;
+using std::chrono::milliseconds;
 using std::chrono::minutes;
+using std::chrono::seconds;
 
 using namespace std::literals;
 
@@ -28,35 +32,35 @@ namespace cfg {
 
     namespace label {
         const char* auto_tz      = "Auto Update Time Zone";
-        const char* msg_duration = "Notification Duration (seconds)";
+        const char* msg_duration = "Notification Duration";
         const char* notify       = "Show Notifications";
         const char* server       = "NTP Servers";
         const char* sync         = "Syncing Enabled";
         const char* threads      = "Background Threads";
-        const char* tolerance    = "Tolerance (milliseconds)";
+        const char* tolerance    = "Tolerance";
         const char* utc_offset   = "Time Offset (UTC)";
     }
 
 
     namespace defaults {
-        const bool        auto_tz      = false;
-        const int         msg_duration = 5;
-        const int         notify       = 1;
-        const std::string server       = "pool.ntp.org";
-        const bool        sync         = false;
-        const int         threads      = 4;
-        const int         tolerance    = 500;
+        const bool         auto_tz      = false;
+        const seconds      msg_duration = 5s;
+        const int          notify       = 0;
+        const std::string  server       = "pool.ntp.org";
+        const bool         sync         = false;
+        const int          threads      = 4;
+        const milliseconds tolerance    = 500ms;
     }
 
 
-    bool        auto_tz      = defaults::auto_tz;
-    int         msg_duration = defaults::msg_duration;
-    int         notify       = defaults::notify;
-    std::string server       = defaults::server;
-    bool        sync         = defaults::sync;
-    int         threads      = defaults::threads;
-    int         tolerance    = defaults::tolerance;
-    minutes     utc_offset   = 0min;
+    bool         auto_tz      = defaults::auto_tz;
+    seconds      msg_duration = defaults::msg_duration;
+    int          notify       = defaults::notify;
+    std::string  server       = defaults::server;
+    bool         sync         = defaults::sync;
+    int          threads      = defaults::threads;
+    milliseconds tolerance    = defaults::tolerance;
+    minutes      utc_offset   = 0min;
 
 
     template<typename T>
@@ -69,18 +73,6 @@ namespace cfg {
             wups::storage::store(key, variable);
         else
             variable = *val;
-    }
-
-
-    void
-    load_or_init(const std::string& key,
-                 minutes& variable)
-    {
-        auto val = wups::storage::load<int>(key);
-        if (!val)
-            wups::storage::store<int>(key, variable.count());
-        else
-            variable = minutes{*val};
     }
 
 
@@ -134,31 +126,26 @@ namespace cfg {
     migrate_old_config()
     {
         // check for leftovers from old versions
-        auto hrs = wups::storage::load<int>("hours");
-        auto min = wups::storage::load<int>("minutes");
+        auto hrs = wups::storage::load<hours>("hours");
+        auto min = wups::storage::load<minutes>("minutes");
         if (hrs || min) {
-            int h = hrs.value_or(0);
-            int m = min.value_or(0);
-            set_utc_offset(minutes{h * 60 + m});
+            hours h = hrs.value_or(0h);
+            minutes m = min.value_or(0min);
+            minutes offset = h + m;
+            set_and_store_utc_offset(offset);
             WUPSStorageAPI::DeleteItem("hours");
             WUPSStorageAPI::DeleteItem("minutes");
             save();
-            logging::printf("Migrated old config: %d hrs + %d min -> %s.",
-                            h, m,
-                            utils::tz_offset_to_string(get_utc_offset()).c_str());
+            logging::printf("Migrated old config: %s + %s -> %s.",
+                            time_utils::to_string(h).c_str(),
+                            time_utils::to_string(m).c_str(),
+                            time_utils::tz_offset_to_string(utc_offset).c_str());
         }
     }
 
 
-    std::chrono::minutes
-    get_utc_offset()
-    {
-        return utc_offset;
-    }
-
-
     void
-    set_utc_offset(std::chrono::minutes offset)
+    set_and_store_utc_offset(minutes offset)
     {
         /*
          * Normally, `utc_offset` is saved on the config storage by the
@@ -167,7 +154,7 @@ namespace cfg {
          */
         utc_offset = offset;
         try {
-            wups::storage::store<int>(key::utc_offset, utc_offset.count());
+            wups::storage::store(key::utc_offset, utc_offset);
             wups::storage::save();
         }
         catch (std::exception& e) {

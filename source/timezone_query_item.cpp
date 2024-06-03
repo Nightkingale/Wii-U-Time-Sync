@@ -42,7 +42,7 @@ timezone_query_item::run()
     try {
         auto [name, offset] = utils::fetch_timezone();
         text = name;
-        cfg::set_utc_offset(offset);
+        cfg::set_and_store_utc_offset(offset);
     }
     catch (std::exception& e) {
         text = "Error: "s + e.what();

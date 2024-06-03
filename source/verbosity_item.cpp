@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 
 #include <algorithm>            // clamp()
+#include <string.h>             // BSD strlcpy()
 
 #include "verbosity_item.hpp"
 
@@ -27,9 +28,9 @@ verbosity_item::verbosity_item(const std::string& key,
                                const std::string& label,
                                int& variable,
                                int default_value) :
-    int_item{key, label,
-             variable, default_value,
-             0, 2, 2}
+    wups::config::int_item{key, label,
+                           variable, default_value,
+                           0, 2, 2}
 {}
 
 
@@ -47,7 +48,7 @@ int
 verbosity_item::get_display(char* buf, std::size_t size)
     const
 {
-    std::snprintf(buf, size, "%s", value_to_str(*variable));
+    ::strlcpy(buf, value_to_str(*variable), size);
     return 0;
 }
 
