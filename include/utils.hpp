@@ -13,10 +13,6 @@
 
 namespace utils {
 
-    // Generate time duration strings for humans.
-    std::string seconds_to_human(double s, bool show_positive = false);
-
-
     /**
      * Split input string into tokens, according to separators.
      *
@@ -45,10 +41,6 @@ namespace utils {
     std::pair<std::string,
               std::chrono::minutes>
     fetch_timezone();
-
-
-    std::string tz_offset_to_string(std::chrono::minutes offset);
-
 
 } // namespace utils
 

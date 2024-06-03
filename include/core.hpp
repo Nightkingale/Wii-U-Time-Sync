@@ -7,11 +7,14 @@
 #include <utility>              // pair<>
 
 #include "net/address.hpp"
+#include "time_utils.hpp"
 
 
 namespace core {
 
-    std::pair<double, double> ntp_query(net::address address);
+    using time_utils::dbl_seconds;
+
+    std::pair<dbl_seconds, dbl_seconds> ntp_query(net::address address);
 
     void run();
 

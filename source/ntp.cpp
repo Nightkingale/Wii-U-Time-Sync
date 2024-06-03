@@ -10,17 +10,21 @@
 
 namespace ntp {
 
-    timestamp::timestamp(double d)
+    timestamp::timestamp(dbl_seconds s)
         noexcept
     {
-        store(std::ldexp(d, 32));
+        // shift s to the left by 32 bits, to line up the fixed point
+        std::uint64_t shifted_s = std::ldexp(s.count(), 32);
+        store(shifted_s);
     }
 
 
-    timestamp::operator double()
+    timestamp::operator dbl_seconds()
         const noexcept
     {
-        return std::ldexp(static_cast<double>(load()), -32);
+        // shift to the right by 32 bits
+        double s = std::ldexp(static_cast<double>(load()), -32);
+        return dbl_seconds{s};
     }
 
 

@@ -37,7 +37,7 @@ int
 timezone_offset_item::get_display(char* buf, std::size_t size)
     const
 {
-    auto str = utils::tz_offset_to_string(*variable);
+    auto str = time_utils::tz_offset_to_string(*variable);
     ::strlcpy(buf, str.c_str(), size);
     return 0;
 }
@@ -59,7 +59,7 @@ timezone_offset_item::get_selected_display(char* buf, std::size_t size)
         fast_right = NIN_GLYPH_BTN_R;
     }
 
-    auto str = utils::tz_offset_to_string(*variable);
+    auto str = time_utils::tz_offset_to_string(*variable);
     std::snprintf(buf, size, "%s%s" "%s" "%s%s",
                   fast_left, slow_left,
                   str.c_str(),
@@ -113,10 +113,10 @@ timezone_offset_item::on_changed()
         return;
 
     try {
-        wups::storage::store<int>(*key, variable->count());
+        wups::storage::store(*key, *variable);
         variable.reset();
     }
     catch (std::exception& e) {
-        logging::printf("Error storing timezone offset: %s", e.what());
+        logging::printf("Error storing time zone offset: %s", e.what());
     }
 }

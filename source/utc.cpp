@@ -10,10 +10,11 @@
 namespace utc {
 
     static
-    double
+    dbl_seconds
     local_time()
     {
-        return static_cast<double>(OSGetTime()) / OSTimerClockSpeed;
+        double t = static_cast<double>(OSGetTime()) / OSTimerClockSpeed;
+        return dbl_seconds{t};
     }
 
 
@@ -21,8 +22,7 @@ namespace utc {
     now()
         noexcept
     {
-        auto offset_seconds = duration_cast<std::chrono::seconds>(cfg::get_utc_offset());
-        return timestamp{ local_time() - offset_seconds.count() };
+        return timestamp{ local_time() - cfg::utc_offset };
     }
 
 } // namespace utc

@@ -7,9 +7,15 @@
 #include <cstdint>
 #include <string>
 
+#include "time_utils.hpp"
+
+
+// For details, see https://www.ntp.org/reflib/rfc/rfc5905.txt
 
 namespace ntp {
-    // For details, see https://www.ntp.org/reflib/rfc/rfc5905.txt
+
+    using time_utils::dbl_seconds;
+
 
     // This is u32.32 fixed-point format, seconds since 1900-01-01 00:00:00 UTC
     class timestamp {
@@ -22,9 +28,9 @@ namespace ntp {
 
         timestamp(std::uint64_t v) = delete;
 
-        // Allow explicit conversions from/to double
-        explicit timestamp(double d) noexcept;
-        explicit operator double() const noexcept;
+        // Allow explicit conversions from/to dbl_seconds
+        explicit timestamp(dbl_seconds d) noexcept;
+        explicit operator dbl_seconds() const noexcept;
 
         // Checks if timestamp is non-zero. Zero has a special meaning.
         constexpr explicit operator bool() const noexcept { return stored; }
