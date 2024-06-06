@@ -38,9 +38,17 @@ namespace utils {
     };
 
 
+    int
+    get_num_tz_services();
+
+
+    const char*
+    get_tz_service_name(int idx);
+
+
     std::pair<std::string,
               std::chrono::minutes>
-    fetch_timezone();
+    fetch_timezone(int idx);
 
 } // namespace utils
 
