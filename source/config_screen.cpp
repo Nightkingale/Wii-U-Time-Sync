@@ -46,7 +46,10 @@ make_config_screen()
                                          cfg::label::utc_offset,
                                          cfg::utc_offset));
 
-    cat.add(timezone_query_item::create());
+    cat.add(timezone_query_item::create(cfg::key::tz_service,
+                                        cfg::label::tz_service,
+                                        cfg::tz_service,
+                                        cfg::defaults::tz_service));
 
     cat.add(bool_item::create(cfg::key::auto_tz,
                               cfg::label::auto_tz,

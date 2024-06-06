@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 
-#include <stdexcept>            // runtime_error
+#include <iterator>             // distance()
+#include <stdexcept>            // logic_error, runtime_error
 
 #include "utils.hpp"
 
@@ -40,6 +41,42 @@ namespace utils {
     }
 
 
+    namespace {
+
+        /*
+         * Split CSV line:
+         *   - Separator is always `,`.
+         *   - Separators inside quotes (`"` or `'`) are ignored.
+         *   - Don't discard empty tokens.
+         */
+        std::vector<std::string>
+        csv_split(const std::string& input)
+        {
+            using std::string;
+
+            std::vector<string> result;
+
+            string::size_type start = 0;
+            for (string::size_type i = 0; i < input.size(); ++i) {
+                char c = input[i];
+                if (c == '"' || c == '\'') {
+                    // jump to the closing quote
+                    i = input.find(c, i + 1);
+                    if (i == string::npos)
+                        break; // if there's no closing quote, it's bad input
+                } else if (c == ',') {
+                    result.push_back(input.substr(start, i - start));
+                    start = i + 1;
+                }
+            }
+            // whatever remains from `start` to the end is the last token
+            result.push_back(input.substr(start));
+            return result;
+        }
+
+    } // namespace
+
+
     exec_guard::exec_guard(std::atomic<bool>& f) :
         flag(f),
         guarded{false}
@@ -57,16 +94,105 @@ namespace utils {
     }
 
 
-    std::pair<std::string, std::chrono::minutes>
-    fetch_timezone()
-    {
-        std::string tz = http::get("http://ip-api.com/line/?fields=timezone,offset");
-        auto tokens = utils::split(tz, " \r\n");
-        if (tokens.size() != 2)
-            throw std::runtime_error{"Could not parse response from \"ip-api.com\"."};
+    namespace {
+        constexpr int num_tz_services = 3;
+    }
 
-        int tz_offset_min = std::stoi(tokens[1]) / 60;
-        return {tokens[0], std::chrono::minutes{tz_offset_min}};
+
+    int
+    get_num_tz_services()
+    {
+        return num_tz_services;
+    }
+
+
+    const char*
+    get_tz_service_name(int idx)
+    {
+        switch (idx) {
+        case 0:
+            return "http://ip-api.com";
+        case 1:
+            return "https://ipwho.is";
+        case 2:
+            return "https://ipapi.co";
+        default:
+            throw std::logic_error{"invalid tz service"};
+        }
+    }
+
+
+    std::pair<std::string, std::chrono::minutes>
+    fetch_timezone(int idx)
+    {
+        if (idx < 0 || idx >= num_tz_services)
+            throw std::logic_error{"invalid service"};
+
+        const char* service = get_tz_service_name(idx);
+
+        static const char* urls[num_tz_services] = {
+            "http://ip-api.com/csv/?fields=timezone,offset",
+            "https://ipwho.is/?fields=timezone.id,timezone.offset&output=csv",
+            "https://ipapi.co/csv"
+        };
+
+        std::string response = http::get(urls[idx]);
+
+        switch (idx) {
+        case 0: // http://ip-api.com
+        case 1: // https://ipwho.is
+            {
+                auto tokens = csv_split(response);
+                if (size(tokens) != 2)
+                    throw std::runtime_error{"Could not parse response from "s + service};
+                std::string name = tokens[0];
+                auto offset = std::chrono::seconds{std::stoi(tokens[1])};
+                return {name, duration_cast<std::chrono::minutes>(offset)};
+            }
+
+        case 2: // https://ipapi.co
+            {
+                // This returns a CSV header and CSV fields in two rows, gotta find
+                // indexes for "timezone" and "utc_offset" fields. The "utc_offset" is
+                // returned as +HHMM, not seconds.
+                auto lines = split(response, "\r\n");
+                if (size(lines) != 2)
+                    throw std::runtime_error{"Could not parse response from "s + service};
+
+                auto keys = csv_split(lines[0]);
+                auto values = csv_split(lines[1]);
+                if (size(keys) != size(values))
+                    throw std::runtime_error{"Incoherent response from "s + service};
+
+                auto tz_it = std::ranges::find(keys, "timezone");
+                auto offset_it = std::ranges::find(keys, "utc_offset");
+                if (tz_it == keys.end() || offset_it == keys.end())
+                    throw std::runtime_error{"Could not find timezone or utc_offset fields"
+                                             " in response."};
+
+                auto tz_idx = std::distance(keys.begin(), tz_it);;
+                auto offset_idx = std::distance(keys.begin(), offset_it);
+
+                std::string name = values[tz_idx];
+                std::string hhmm = values[offset_idx];
+                if (empty(hhmm))
+                    throw std::runtime_error{"Invalid UTC offset string."};
+
+                char sign = hhmm[0];
+                std::string hh = hhmm.substr(1, 2);
+                std::string mm = hhmm.substr(3, 2);
+                int h = std::stoi(hh);
+                int m = std::stoi(mm);
+                int total = h * 60 + m;
+                if (sign == '-')
+                    total = -total;
+                return {name, std::chrono::minutes{total}};
+            }
+
+        default:
+            throw std::logic_error{"invalid tz service"};
+        }
+
     }
 
 } // namespace utils

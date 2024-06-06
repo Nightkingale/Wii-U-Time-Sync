@@ -272,17 +272,17 @@ namespace core {
 
         if (cfg::auto_tz) {
             try {
-                auto [name, offset] = utils::fetch_timezone();
+                auto [name, offset] = utils::fetch_timezone(cfg::tz_service);
                 if (offset != cfg::utc_offset) {
                     cfg::set_and_store_utc_offset(offset);
                     notify::info(notify::level::verbose,
-                                 "Updated timezone to " + name +
+                                 "Updated time zone to " + name +
                                  "(" + time_utils::tz_offset_to_string(offset) + ")");
                 }
             }
             catch (std::exception& e) {
                 notify::error(notify::level::verbose,
-                              "Failed to update timezone: "s + e.what());
+                              "Failed to update time zone: "s + e.what());
             }
         }
 
