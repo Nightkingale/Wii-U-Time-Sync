@@ -26,6 +26,7 @@ namespace cfg {
         const char* server       = "server";
         const char* sync         = "sync";
         const char* threads      = "threads";
+        const char* timeout      = "timeout";
         const char* tolerance    = "tolerance";
         const char* tz_service   = "tz_service";
         const char* utc_offset   = "utc_offset";
@@ -39,6 +40,7 @@ namespace cfg {
         const char* server       = "NTP Servers";
         const char* sync         = "Syncing Enabled";
         const char* threads      = "Background Threads";
+        const char* timeout      = "Timeout";
         const char* tolerance    = "Tolerance";
         const char* tz_service   = "Detect Time Zone (press " NIN_GLYPH_BTN_A ")";
         const char* utc_offset   = "Time Offset (UTC)";
@@ -52,6 +54,7 @@ namespace cfg {
         const std::string  server       = "pool.ntp.org";
         const bool         sync         = false;
         const int          threads      = 4;
+        const seconds      timeout      = 5s;
         const milliseconds tolerance    = 500ms;
         const int          tz_service   = 0;
     }
@@ -63,6 +66,7 @@ namespace cfg {
     std::string  server       = defaults::server;
     bool         sync         = defaults::sync;
     int          threads      = defaults::threads;
+    seconds      timeout      = defaults::timeout;
     milliseconds tolerance    = defaults::tolerance;
     int          tz_service   = defaults::tz_service;
     minutes      utc_offset   = 0min;
@@ -91,6 +95,7 @@ namespace cfg {
             load_or_init(key::server,       server);
             load_or_init(key::sync,         sync);
             load_or_init(key::threads,      threads);
+            load_or_init(key::timeout,      timeout);
             load_or_init(key::tolerance,    tolerance);
             load_or_init(key::tz_service,   tz_service);
             load_or_init(key::utc_offset,   utc_offset);

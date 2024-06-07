@@ -121,7 +121,7 @@ namespace core {
         unsigned poll_attempts = 0;
         const unsigned max_poll_attempts = 4;
     try_again_poll:
-        auto readable_status = sock.try_is_readable(4s);
+        auto readable_status = sock.try_is_readable(cfg::timeout);
         if (!readable_status) {
             // Wii U OS can only handle 16 concurrent select()/poll() calls,
             // so we may need to try again later.

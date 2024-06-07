@@ -63,6 +63,12 @@ make_config_screen()
                                  cfg::defaults::msg_duration,
                                  1s, 30s, 5s));
 
+    cat.add(seconds_item::create(cfg::key::timeout,
+                                  cfg::label::timeout,
+                                  cfg::timeout,
+                                  cfg::defaults::timeout,
+                                  1s, 10s, 5s));
+
     cat.add(milliseconds_item::create(cfg::key::tolerance,
                                       cfg::label::tolerance,
                                       cfg::tolerance,
