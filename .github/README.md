@@ -31,8 +31,9 @@ If the program is placed correctly on an SD card, Wii U Time Sync will be listed
   * https://ipwho.is
   * https://ipapi.co
 * `Configuration -> Auto Update Time Zone`: Automatically utilizes the IP Geolocation API to set your offset accordingly, `off` by default.
-* `Configuration -> Notification Duration (seconds)`: The amount of seconds which notifications will appear on screen for, `5` by default.
-* `Configuration -> Tolerance (milliseconds)`: The amount of milliseconds in which Wii U Time Sync will tolerate differences, `500` by default.
+* `Configuration -> Notification Duration`: The amount of seconds which notifications will appear on screen for, `5 s` by default.
+* `Configuration -> Timeout`: The amount of seconds before an established NTP connection will timeout, `5 s` by default.
+* `Configuration -> Tolerance`: The amount of milliseconds in which Wii U Time Sync will tolerate differences, `500 ms` by default.
 * `Configuration -> Background Threads`: Controls how many servers are queried at once, `4` by default.
     * If you stick to the default server, you do not need to set this to more than `4`.
 * `Configuration -> NTP Servers`: The list of NTP servers in which the plugin connects to, only `pool.ntp.org` by default.
