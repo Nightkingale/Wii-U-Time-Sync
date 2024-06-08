@@ -16,6 +16,7 @@ namespace cfg {
         extern const char* server;
         extern const char* sync;
         extern const char* threads;
+        extern const char* timeout;
         extern const char* tolerance;
         extern const char* tz_service;
         extern const char* utc_offset;
@@ -29,6 +30,7 @@ namespace cfg {
         extern const char* server;
         extern const char* sync;
         extern const char* threads;
+        extern const char* timeout;
         extern const char* tolerance;
         extern const char* tz_service;
         extern const char* utc_offset;
@@ -41,6 +43,7 @@ namespace cfg {
         extern const std::string               server;
         extern const bool                      sync;
         extern const int                       threads;
+        extern const std::chrono::seconds      timeout;
         extern const std::chrono::milliseconds tolerance;
         extern const int                       tz_service;
     }
@@ -52,6 +55,7 @@ namespace cfg {
     extern std::string               server;
     extern bool                      sync;
     extern int                       threads;
+    extern std::chrono::seconds      timeout;
     extern std::chrono::milliseconds tolerance;
     extern int                       tz_service;
     extern std::chrono::minutes      utc_offset;
