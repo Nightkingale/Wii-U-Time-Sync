@@ -9,7 +9,7 @@ For convenience, it is recommended that you download Wii U Time Sync from the [H
 
 <p align="center">
   <a href="https://hb-app.store/wiiu/Wii-U-Time-Sync">
-    <img src="appstore.png" alt="Get it on the Homebrew App Store!">
+    <img src="appstore.png" alt="Get it on the Homebrew App Store!" width="50%" height="50%">
   </a>
 </p>
 
