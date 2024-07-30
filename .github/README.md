@@ -48,8 +48,25 @@ As long as syncing is enabled by the user, the clock will sync whenever Wii U Ti
 
 **The changes will not be reflected in the HOME Menu and most other applications right away, so the console will need to be rebooted for changes to be completed.**
 
+## Assistance
+If you encounter bugs, the best place to report them would be the [Issues](https://github.com/Nightkingale/Wii-U-Time-Sync/issues) tab. This allows for easy tracking and reference, though please check for duplicates first and comment there if possible!
+
+For assistance or other inquiries, the best place to reach out would be the [Nightkingale Studios](https://discord.nightkingale.com/) Discord server ([#chat-hangout](https://discord.com/channels/450846070025748480/1127657272315740260) is okay). I am active in many other Wii U homebrew Discord servers as well.
+
+## Compilation
+You should have [wut](https://github.com/devkitPro/wut) installed. Following the [devkitPro Getting Started guide](https://devkitpro.org/wiki/Getting_Started) will set you up with it and all other basic dependancies. Additionally, you will need the following dependancies:
+
+* [libcurlwrapper](https://github.com/wiiu-env/libcurlwrapper)
+* [libnotifications](https://github.com/wiiu-env/libnotifications)
+* [wiiupluginsystem](https://github.com/wiiu-env/wiiupluginsystem)
+
+After all dependancies have been installed, you can just run `make`. This will produce a `.wps` binary.
+
+* In addition, you can pass `DEBUG=1` as an argument, which will include the commit hash as part of the version string inside the binary. All products produced by [workflows](https://github.com/Nightkingale/Wii-U-Time-Sync/actions) utilize this.
+
 ## Credits
 I hope that I am able to express my thanks as much as possible to those who made this repository possible.
+
 * [dkosmari](https://github.com/dkosmari), who is now co-developing Wii U Time Sync with me and has greatly contributed to the plugin for a much longer period, including his refactoring in the v2.0.0 release.
 * [GaryOderNichts](https://github.com/GaryOderNichts), for writing the network connection code and figuring out how to set the console's date and time through homebrew (so basically all the functionality).
 * [Maschell](https://github.com/Maschell), for his work not only with figuring out setting the date and time, but also his work on the Aroma environment.
