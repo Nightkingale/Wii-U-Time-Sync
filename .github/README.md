@@ -32,6 +32,7 @@ Otherwise, a Wii U plugin file will be bundled with each release. It should be p
 If the program is placed correctly on an SD card, Wii U Time Sync will be listed in the Aroma environment's Wii U Plugin System Config Menu.
 
 * If Wii U Time Sync doesn't show up in the Wii U Plugin System Config Menu, confirm you placed the WPS file on your SD card correctly and restart your console.
+* As long as syncing is enabled by the user, the clock will sync using NTP (network time protocol) whenever Wii U Time Sync starts or when the plugin settings are exited.
 
 ### Configuration
 * `Configuration -> Syncing Enabled`: Enables syncing to the Internet, `off` by default.
@@ -57,8 +58,6 @@ If the program is placed correctly on an SD card, Wii U Time Sync will be listed
 * `Preview Time`: Lets you preview what the system's clock is currently set to, as well as correction and latency statistics.
 
 For values you would like to set back to default, you can press the X button while highlighting the option you would like to reset.
-
-As long as syncing is enabled by the user, the clock will sync using NTP whenever Wii U Time Sync starts, or when the plugin settings are exited.
 
 ## Assistance
 If you encounter bugs, the best place to report them would be the [Issues](https://github.com/Nightkingale/Wii-U-Time-Sync/issues) tab. This allows for easy tracking and reference, though please check for duplicates first and comment there if possible!
