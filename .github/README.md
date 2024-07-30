@@ -20,6 +20,8 @@ Otherwise, a Wii U plugin file will be bundled with each release. It should be p
 If the program is placed correctly on an SD card, Wii U Time Sync will be listed in the Aroma environment's Wii U Plugin System Config Menu.
 
 * If Wii U Time Sync doesn't show up in the Wii U Plugin System Config Menu, confirm you placed the WPS file on your SD card correctly and restart your console.
+
+### Configuration
 * `Configuration -> Syncing Enabled`: Enables syncing to the Internet, `off` by default.
 * `Configuration -> Show Notifications`: Shows a notification whenever Wii U Time Sync adjusts the clock, `normal` by default.
     * `quiet` means that no notifications will appear on success.
