@@ -46,12 +46,16 @@ For values you would like to set back to default, you can press the X button whi
 
 As long as syncing is enabled by the user, the clock will sync whenever Wii U Time Sync starts, or when the plugin settings are exited.
 
-**The changes will not be reflected in the HOME Menu and most other applications right away, so the console will need to be rebooted for changes to be completed.**
-
 ## Assistance
 If you encounter bugs, the best place to report them would be the [Issues](https://github.com/Nightkingale/Wii-U-Time-Sync/issues) tab. This allows for easy tracking and reference, though please check for duplicates first and comment there if possible!
 
 For assistance or other inquiries, the best place to reach out would be the [Nightkingale Studios](https://discord.nightkingale.com/) Discord server ([#chat-hangout](https://discord.com/channels/450846070025748480/1127657272315740260) is okay). I am active in many other Wii U homebrew Discord servers as well.
+
+### Frequently Asked Questions
+
+**1. Why doesn't it seem like the time changes when I manually run a sync?**
+
+The changes will not be reflected in the HOME Menu and most other applications right away, so the console will need to be rebooted for changes to be completed.
 
 ## Compilation
 You should have [wut](https://github.com/devkitPro/wut) installed. Following the [devkitPro Getting Started guide](https://devkitpro.org/wiki/Getting_Started) will set you up with it and all other basic dependancies. Additionally, you will need the following dependancies:
