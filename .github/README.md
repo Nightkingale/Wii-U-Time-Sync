@@ -30,7 +30,7 @@ If the program is placed correctly on an SD card, Wii U Time Sync will be listed
   * http://ip-api.com
   * https://ipwho.is
   * https://ipapi.co
-* `Configuration -> Auto Update Time Zone`: Automatically utilizes the IP Geolocation API to set your offset accordingly, `off` by default.
+* `Configuration -> Auto Update Time Zone`: Automatically utilizes an IP Geolocation API to set your offset accordingly, `off` by default.
 * `Configuration -> Notification Duration`: The amount of seconds which notifications will appear on screen for, `5 s` by default.
 * `Configuration -> Timeout`: The amount of seconds before an established NTP connection will timeout, `5 s` by default.
 * `Configuration -> Tolerance`: The amount of milliseconds in which Wii U Time Sync will tolerate differences, `500 ms` by default.
