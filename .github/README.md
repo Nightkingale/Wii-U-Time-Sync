@@ -60,9 +60,10 @@ You should have [wut](https://github.com/devkitPro/wut) installed. Following the
 * [libnotifications](https://github.com/wiiu-env/libnotifications)
 * [wiiupluginsystem](https://github.com/wiiu-env/wiiupluginsystem)
 
-After all dependancies have been installed, you can just run `make`. This will produce a `.wps` binary.
+After all dependancies have been installed, you can just run `make`.
 
 * In addition, you can pass `DEBUG=1` as an argument, which will include the commit hash as part of the version string inside the binary. All products produced by [workflows](https://github.com/Nightkingale/Wii-U-Time-Sync/actions) utilize this.
+* The resulting binary will be a `.wps` file. You can use this the same way as a release binary.
 
 ## Credits
 I hope that I am able to express my thanks as much as possible to those who made this repository possible.
