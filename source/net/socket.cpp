@@ -1,4 +1,10 @@
-// SPDX-License-Identifier: MIT
+/*
+ * Wii U Time Sync - A NTP client plugin for the Wii U.
+ *
+ * Copyright (C) 2024  Daniel K. O.
+ *
+ * SPDX-License-Identifier: MIT
+ */
 
 #include <cerrno>
 #include <cstddef>              // byte
@@ -8,10 +14,9 @@
 #include <arpa/inet.h>          // ntohl()
 #include <sys/socket.h>         // socket()
 #include <unistd.h>             // close()
+#include <whb/log.h>
 
 #include "net/socket.hpp"
-
-#include "logging.hpp"
 
 
 // Note: WUT doesn't have SOL_IP, but IPPROTO_IP seems to work.
@@ -109,7 +114,7 @@ namespace net {
                 other.fd = -1;
             }
             catch (std::exception& e) {
-                logging::printf("socket::operator=() failed: %s", e.what());
+                WHBLogPrintf("socket::operator=() failed: %s", e.what());
             }
         }
         return *this;
@@ -122,7 +127,7 @@ namespace net {
             close();
         }
         catch (std::exception& e) {
-            logging::printf("socket::~socket() failed: %s", e.what());
+            WHBLogPrintf("socket::~socket() failed: %s", e.what());
         }
     }
 

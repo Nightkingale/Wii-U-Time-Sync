@@ -1,23 +1,34 @@
-// SPDX-License-Identifier: MIT
+/*
+ * Wii U Time Sync - A NTP client plugin for the Wii U.
+ *
+ * Copyright (C) 2024  Daniel K. O.
+ * Copyright (C) 2024  Nightkingale
+ *
+ * SPDX-License-Identifier: MIT
+ */
 
 #include <cmath>                // max(), min()
 #include <exception>
 #include <vector>
 
+#include <wupsxx/cafe_glyphs.h>
+#include <wupsxx/logger.hpp>
+
 #include "clock_item.hpp"
 
 #include "cfg.hpp"
 #include "core.hpp"
-#include "logging.hpp"
 #include "net/addrinfo.hpp"
-#include "nintendo_glyphs.h"
 #include "time_utils.hpp"
 #include "utils.hpp"
 
+
 using namespace std::literals;
+using namespace wups::config;
 
 using time_utils::dbl_seconds;
-using wups::config::text_item;
+
+namespace logger = wups::logger;
 
 
 namespace {
@@ -52,11 +63,11 @@ namespace {
         return result;
     }
 
-}
+} // namespace
 
 
 clock_item::clock_item() :
-    text_item{{}, "Clock (press " NIN_GLYPH_BTN_A ")", "", 48}
+    button_item{"Clock"}
 {}
 
 
@@ -68,32 +79,31 @@ clock_item::create()
 
 
 void
-clock_item::on_input(WUPSConfigSimplePadData input,
-                     WUPS_CONFIG_SIMPLE_INPUT repeat)
+clock_item::on_started()
 {
-    text_item::on_input(input, repeat);
-
-    if (input.buttons_d & WUPS_CONFIG_BUTTON_A) {
-        try {
-            run();
-        }
-        catch (std::exception& e) {
-            text = "Error: "s + e.what();
-        }
+    try {
+        status_msg = "";
+        run();
+        update_status_msg();
     }
-
-    refresh_now_str();
+    catch (std::exception& e) {
+        status_msg = e.what();
+    }
+    current_state = state::finished;
 }
 
 
 void
-clock_item::refresh_now_str()
+clock_item::update_status_msg()
 {
     now_str = core::local_clock_to_string();
-    text = now_str + stats_str;
+    status_msg = now_str + diff_str;
 }
 
 
+/*
+ * Note: this code is very similar to core::run(), but runs in a single thread.
+ */
 void
 clock_item::run()
 {
@@ -127,20 +137,20 @@ clock_item::run()
 
             for (const auto& info : infos) {
                 try {
-                    auto [correction, latency] = core::ntp_query(info.addr);
+                    auto [correction, latency] = core::ntp_query({}, info.addr);
                     server_corrections.push_back(correction);
                     server_latencies.push_back(latency);
                     total += correction;
                     ++num_values;
-                    logging::printf("%s (%s): correction = %s, latency = %s",
-                                    server.c_str(),
-                                    to_string(info.addr).c_str(),
-                                    seconds_to_human(correction, true).c_str(),
-                                    seconds_to_human(latency).c_str());
+                    logger::printf("%s (%s): correction = %s, latency = %s\n",
+                                   server.c_str(),
+                                   to_string(info.addr).c_str(),
+                                   seconds_to_human(correction, true).c_str(),
+                                   seconds_to_human(latency).c_str());
                 }
                 catch (std::exception& e) {
                     ++errors;
-                    logging::printf("Error: %s", e.what());
+                    logger::printf("Error: %s\n", e.what());
                 }
             }
 
@@ -168,9 +178,7 @@ clock_item::run()
 
     if (num_values) {
         dbl_seconds avg = total / num_values;
-        stats_str = ", needs "s + seconds_to_human(avg, true);
+        diff_str = ", needs "s + seconds_to_human(avg, true);
     } else
-        stats_str = "";
-
-    refresh_now_str();
+        diff_str = "";
 }

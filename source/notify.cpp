@@ -1,13 +1,23 @@
-// SPDX-License-Identifier: MIT
+/*
+ * Wii U Time Sync - A NTP client plugin for the Wii U.
+ *
+ * Copyright (C) 2024  Daniel K. O.
+ *
+ * SPDX-License-Identifier: MIT
+ */
 
 #include <atomic>
 
 #include <notifications/notifications.h>
 
+#include <wupsxx/logger.hpp>
+
 #include "notify.hpp"
 
 #include "cfg.hpp"
-#include "logging.hpp"
+
+
+namespace logger = wups::logger;
 
 
 namespace notify {
@@ -43,7 +53,7 @@ namespace notify {
     void
     error(level lvl, const std::string& arg)
     {
-        logging::printf("ERROR: %s", arg.c_str());
+        logger::printf("ERROR: %s\n", arg.c_str());
 
         if (static_cast<int>(lvl) > cfg::notify)
             return;
@@ -63,7 +73,7 @@ namespace notify {
     void
     info(level lvl, const std::string& arg)
     {
-        logging::printf("INFO: %s", arg.c_str());
+        logger::printf("INFO: %s\n", arg.c_str());
 
         if (static_cast<int>(lvl) > cfg::notify)
             return;
@@ -82,7 +92,7 @@ namespace notify {
     void
     success(level lvl, const std::string& arg)
     {
-        logging::printf("SUCCESS: %s", arg.c_str());
+        logger::printf("SUCCESS: %s\n", arg.c_str());
 
         if (static_cast<int>(lvl) > cfg::notify)
             return;
