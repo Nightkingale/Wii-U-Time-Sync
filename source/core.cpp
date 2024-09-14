@@ -1,4 +1,11 @@
-// SPDX-License-Identifier: MIT
+/*
+ * Wii U Time Sync - A NTP client plugin for the Wii U.
+ *
+ * Copyright (C) 2024  Daniel K. O.
+ * Copyright (C) 2024  Nightkingale
+ *
+ * SPDX-License-Identifier: MIT
+ */
 
 #include <atomic>
 #include <chrono>
@@ -15,10 +22,11 @@
 #include <nn/ccr.h>             // CCRSysSetSystemTime()
 #include <nn/pdm.h>             // __OSSetAbsoluteSystemTime()
 
+#include <wupsxx/logger.hpp>
+
 #include "core.hpp"
 
 #include "cfg.hpp"
-#include "logging.hpp"
 #include "net/addrinfo.hpp"
 #include "net/socket.hpp"
 #include "notify.hpp"
@@ -30,6 +38,9 @@
 
 
 using namespace std::literals;
+using std::runtime_error;
+
+namespace logger = wups::logger;
 
 using time_utils::dbl_seconds;
 
@@ -85,9 +96,24 @@ namespace {
 
 namespace core {
 
+
+    struct canceled_error : runtime_error {
+        canceled_error() : runtime_error{"Operation canceled."} {}
+    };
+
+
+    void
+    check_stop(std::stop_token token)
+    {
+        if (token.stop_requested())
+            throw canceled_error{};
+    }
+
+
     // Note: hardcoded for IPv4, the Wii U doesn't have IPv6.
     std::pair<dbl_seconds, dbl_seconds>
-    ntp_query(net::address address)
+    ntp_query(std::stop_token token,
+              net::address address)
     {
         using std::to_string;
 
@@ -101,7 +127,10 @@ namespace core {
 
         unsigned send_attempts = 0;
         const unsigned max_send_attempts = 4;
+
     try_again_send:
+        // cancellation point: before sending
+        check_stop(token);
         auto t1 = to_ntp(utc::now());
         packet.transmit_time = t1;
 
@@ -111,16 +140,21 @@ namespace core {
             if (e.code() != std::errc::not_enough_memory)
                 throw e;
             if (++send_attempts < max_send_attempts) {
+                // cancellation point: before sleeping
+                check_stop(token);
                 std::this_thread::sleep_for(100ms);
                 goto try_again_send;
             } else
-                throw std::runtime_error{"No resources for send(), too many retries!"};
+                throw runtime_error{"No resources for send(), too many retries!"};
         }
 
 
         unsigned poll_attempts = 0;
         const unsigned max_poll_attempts = 4;
+
     try_again_poll:
+        // cancellation point: before polling
+        check_stop(token);
         auto readable_status = sock.try_is_readable(cfg::timeout);
         if (!readable_status) {
             // Wii U OS can only handle 16 concurrent select()/poll() calls,
@@ -129,40 +163,42 @@ namespace core {
             if (e.code() != std::errc::not_enough_memory)
                 throw e;
             if (++poll_attempts < max_poll_attempts) {
+                // cancellation point: before sleeping
+                check_stop(token);
                 std::this_thread::sleep_for(10ms);
                 goto try_again_poll;
             } else
-                throw std::runtime_error{"No resources for poll(), too many retries!"};
+                throw runtime_error{"No resources for poll(), too many retries!"};
         }
 
         if (!*readable_status)
-            throw std::runtime_error{"Timeout reached!"};
+            throw runtime_error{"Timeout reached!"};
 
         // Measure the arrival time as soon as possible.
         auto t4 = to_ntp(utc::now());
 
         if (sock.recv(&packet, sizeof packet) < 48)
-            throw std::runtime_error{"Invalid NTP response!"};
+            throw runtime_error{"Invalid NTP response!"};
 
         sock.close(); // close it early
 
         auto v = packet.version();
         if (v < 3 || v > 4)
-            throw std::runtime_error{"Unsupported NTP version: "s + to_string(v)};
+            throw runtime_error{"Unsupported NTP version: "s + to_string(v)};
 
         auto m = packet.mode();
         if (m != ntp::packet::mode_flag::server)
-            throw std::runtime_error{"Invalid NTP packet mode: "s + to_string(m)};
+            throw runtime_error{"Invalid NTP packet mode: "s + to_string(m)};
 
         auto l = packet.leap();
         if (l == ntp::packet::leap_flag::unknown)
-            throw std::runtime_error{"Unknown value for leap flag."};
+            throw runtime_error{"Unknown value for leap flag."};
 
         ntp::timestamp t1_received = packet.origin_time;
         if (t1 != t1_received)
-            throw std::runtime_error{"NTP response mismatch: ["s
-                                     + ::to_string(t1) + "] vs ["s
-                                     + ::to_string(t1_received) + "]"s};
+            throw runtime_error{"NTP response mismatch: ["s
+                                + ::to_string(t1) + "] vs ["s
+                                + ::to_string(t1_received) + "]"s};
 
         // when our request arrived at the server
         auto t2 = packet.receive_time;
@@ -171,7 +207,7 @@ namespace core {
 
         // Zero is not a valid timestamp.
         if (!t2 || !t3)
-            throw std::runtime_error{"NTP response has invalid timestamps."};
+            throw runtime_error{"NTP response has invalid timestamps."};
 
         /*
          * We do all calculations in double precision to never worry about overflows. Since
@@ -236,26 +272,24 @@ namespace core {
 
         nn::pdm::NotifySetTimeEndEvent();
 
-        // logging::printf("CCRSysSetSystemTime() took %f ms",
-        //                 1000.0 * (ccr_finish - ccr_start) / OSTimerClockSpeed);
-        // logging::printf("__OSSetAbsoluteSystemTime() took %f ms",
-        //                 1000.0 * (abs_finish - abs_start) / OSTimerClockSpeed);
+        // logger::printf("CCRSysSetSystemTime() took %f ms\n",
+        //                1000.0 * (ccr_finish - ccr_start) / OSTimerClockSpeed);
+        // logger::printf("__OSSetAbsoluteSystemTime() took %f ms\n",
+        //                1000.0 * (abs_finish - abs_start) / OSTimerClockSpeed);
 
         // OSTime after = OSGetSystemTime();
-        // logging::printf("Total time: %f ms",
-        //                 1000.0 * (after - before) / OSTimerClockSpeed);
+        // logger::printf("Total time: %f ms\n",
+        //                1000.0 * (after - before) / OSTimerClockSpeed);
 
         return success1 && success2;
     }
 
 
     void
-    run()
+    run(std::stop_token token,
+        bool silent)
     {
         using time_utils::seconds_to_human;
-
-        if (!cfg::sync)
-            return;
 
         // ensure notification is initialized if needed
         notify::guard notify_guard{cfg::notify > 0};
@@ -264,30 +298,32 @@ namespace core {
         utils::exec_guard exec_guard{executing};
         if (!exec_guard.guarded) {
             // Another thread is already executing this function.
-            notify::info(notify::level::verbose,
-                         "Skipping NTP task: operation already in progress.");
-            return;
+            throw runtime_error{"Skipping NTP task: operation already in progress."};
         }
-
 
         if (cfg::auto_tz) {
             try {
                 auto [name, offset] = utils::fetch_timezone(cfg::tz_service);
                 if (offset != cfg::utc_offset) {
                     cfg::set_and_store_utc_offset(offset);
-                    notify::info(notify::level::verbose,
-                                 "Updated time zone to " + name +
-                                 "(" + time_utils::tz_offset_to_string(offset) + ")");
+                    if (!silent)
+                        notify::info(notify::level::verbose,
+                                     "Updated time zone to " + name +
+                                     "(" + time_utils::tz_offset_to_string(offset) + ")");
                 }
             }
             catch (std::exception& e) {
-                notify::error(notify::level::verbose,
-                              "Failed to update time zone: "s + e.what());
+                if (!silent)
+                    notify::error(notify::level::verbose,
+                                  "Failed to update time zone: "s + e.what());
+                // Note: not a fatal error, we just keep using the previous time zone.
             }
         }
 
-        thread_pool pool(cfg::threads);
+        // cancellation point: after the time zone update
+        check_stop(token);
 
+        thread_pool pool{static_cast<unsigned>(cfg::threads)};
 
         std::vector<std::string> servers = utils::split(cfg::server, " \t,;");
 
@@ -304,6 +340,9 @@ namespace core {
             for (auto [fut, server] : std::views::zip(futures, servers))
                 fut = pool.submit(net::addrinfo::lookup, server, "123"s, opts);
 
+            // cancellation point: after submitting the DNS queries
+            check_stop(token);
+
             // Collect all future results.
             for (auto& fut : futures)
                 try {
@@ -311,44 +350,55 @@ namespace core {
                         addresses.insert(info.addr);
                 }
                 catch (std::exception& e) {
-                    notify::error(notify::level::verbose, e.what());
+                    if (!silent)
+                        notify::error(notify::level::verbose, e.what());
                 }
         }
 
         if (addresses.empty()) {
             // Probably a mistake in config, or network failure.
-            notify::error(notify::level::normal, "No NTP address could be used.");
-            return;
+            throw runtime_error{"No NTP address could be used."};
         }
+
+        // cancellation point: before the NTP queries are submitted
+        check_stop(token);
 
         // Launch NTP queries asynchronously.
         std::vector<std::future<std::pair<dbl_seconds, dbl_seconds>>>
             futures(addresses.size());
         for (auto [fut, address] : std::views::zip(futures, addresses))
-            fut = pool.submit(ntp_query, address);
+            fut = pool.submit(ntp_query, token, address);
+
+        // cancellation point: after NTP queries are submited
+        check_stop(token);
 
         // Collect all future results.
         std::vector<dbl_seconds> corrections;
         for (auto [address, fut] : std::views::zip(addresses, futures))
             try {
+                // cancellation point: before blocking waiting for a NTP result
+                check_stop(token);
                 auto [correction, latency] = fut.get();
                 corrections.push_back(correction);
-                notify::info(notify::level::verbose,
-                             to_string(address)
-                             + ": correction = "s + seconds_to_human(correction, true)
-                             + ", latency = "s + seconds_to_human(latency));
+                if (!silent)
+                    notify::info(notify::level::verbose,
+                                 to_string(address)
+                                 + ": correction = "s + seconds_to_human(correction, true)
+                                 + ", latency = "s + seconds_to_human(latency));
+            }
+            catch (canceled_error&) {
+                throw;
             }
             catch (std::exception& e) {
-                notify::error(notify::level::verbose,
-                              to_string(address) + ": "s + e.what());
+                if (!silent)
+                    notify::error(notify::level::verbose,
+                                  to_string(address) + ": "s + e.what());
             }
 
 
-        if (corrections.empty()) {
-            notify::error(notify::level::normal,
-                          "No NTP server could be used!");
-            return;
-        }
+        if (corrections.empty())
+            throw runtime_error{"No NTP server could be used!"};
+
 
         dbl_seconds total = std::accumulate(corrections.begin(),
                                             corrections.end(),
@@ -356,22 +406,22 @@ namespace core {
         dbl_seconds avg = total / static_cast<double>(corrections.size());
 
         if (abs(avg) <= cfg::tolerance) {
-            notify::success(notify::level::verbose,
-                            "Tolerating clock drift (correction is only "
-                            + seconds_to_human(avg, true) + ")."s);
+            if (!silent)
+                notify::success(notify::level::verbose,
+                                "Tolerating clock drift (correction is only "
+                                + seconds_to_human(avg, true) + ")."s);
             return;
         }
 
-        if (cfg::sync) {
-            if (!apply_clock_correction(avg)) {
-                // This error woudl be so bad, the user should always know about it.
-                notify::error(notify::level::quiet,
-                              "Failed to set system clock!");
-                return;
-            }
+        // cancellation point: before modifying the clock
+        check_stop(token);
+
+        if (!apply_clock_correction(avg))
+            throw runtime_error{"Failed to set system clock!"};
+
+        if (!silent)
             notify::success(notify::level::normal,
                             "Clock corrected by " + seconds_to_human(avg, true));
-        }
 
     }
 

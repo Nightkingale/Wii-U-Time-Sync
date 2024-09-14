@@ -1,8 +1,12 @@
-// SPDX-License-Identifier: MIT
+/*
+ * Wii U Time Sync - A NTP client plugin for the Wii U.
+ *
+ * Copyright (C) 2024  Daniel K. O.
+ *
+ * SPDX-License-Identifier: MIT
+ */
 
 #include "net/error.hpp"
-
-#include "utils.hpp"
 
 
 namespace net {

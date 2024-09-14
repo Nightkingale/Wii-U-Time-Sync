@@ -1,15 +1,26 @@
-// SPDX-License-Identifier: MIT
+/*
+ * Wii U Time Sync - A NTP client plugin for the Wii U.
+ *
+ * Copyright (C) 2024  Daniel K. O.
+ * Copyright (C) 2024  Nightkingale
+ *
+ * SPDX-License-Identifier: MIT
+ */
 
 #include <algorithm>            // clamp()
+#include <array>
 #include <string.h>             // BSD strlcpy()
+
+#include <wupsxx/cafe_glyphs.h>
 
 #include "verbosity_item.hpp"
 
-#include "nintendo_glyphs.h"
+
+using namespace wups::config;
 
 
 namespace {
-    const char* value_str[] = {
+    const std::array value_str = {
         "quiet",
         "normal",
         "verbose"
@@ -18,60 +29,59 @@ namespace {
     const char*
     value_to_str(int v)
     {
-        v = std::clamp(v, 0, 2);
+        v = std::clamp<int>(v, 0, value_str.size());
         return value_str[v];
     }
 }
 
 
-verbosity_item::verbosity_item(const std::string& key,
-                               const std::string& label,
+verbosity_item::verbosity_item(const std::string& label,
                                int& variable,
                                int default_value) :
-    wups::config::int_item{key, label,
-                           variable, default_value,
-                           0, 2, 2}
+    int_item{label,
+             variable,
+             default_value,
+             0, 2, 2}
 {}
 
 
 std::unique_ptr<verbosity_item>
-verbosity_item::create(const std::string& key,
-                       const std::string& label,
+verbosity_item::create(const std::string& label,
                        int& variable,
                        int default_value)
 {
-    return std::make_unique<verbosity_item>(key, label, variable, default_value);
+    return std::make_unique<verbosity_item>(label, variable, default_value);
 }
 
 
-int
+void
 verbosity_item::get_display(char* buf, std::size_t size)
     const
 {
-    ::strlcpy(buf, value_to_str(*variable), size);
-    return 0;
+    ::strlcpy(buf, value_to_str(variable), size);
 }
 
 
-int
-verbosity_item::get_selected_display(char* buf, std::size_t size)
+void
+verbosity_item::get_focused_display(char* buf, std::size_t size)
     const
 {
     const char* left = "";
     const char* right = "";
 
-    switch (*variable) {
+    switch (variable) {
     case 0:
-        right = " " NIN_GLYPH_BTN_DPAD_RIGHT;
+        right = " " CAFE_GLYPH_BTN_RIGHT;
         break;
     case 1:
-        left = NIN_GLYPH_BTN_DPAD_LEFT " ";
-        right = " " NIN_GLYPH_BTN_DPAD_RIGHT;
+        left = CAFE_GLYPH_BTN_LEFT " ";
+        right = " " CAFE_GLYPH_BTN_RIGHT;
         break;
     case 2:
-        left = NIN_GLYPH_BTN_DPAD_LEFT " ";
+        left = CAFE_GLYPH_BTN_LEFT " ";
         break;
     }
-    std::snprintf(buf, size, "%s%s%s", left, value_to_str(*variable), right);
-    return 0;
+    std::snprintf(buf, size,
+                  "%s%s%s",
+                  left, value_to_str(variable), right);
 }

@@ -1,4 +1,10 @@
-// SPDX-License-Identifier: MIT
+/*
+ * Wii U Time Sync - A NTP client plugin for the Wii U.
+ *
+ * Copyright (C) 2024  Daniel K. O.
+ *
+ * SPDX-License-Identifier: MIT
+ */
 
 #ifndef NET_SOCKET_HPP
 #define NET_SOCKET_HPP
@@ -13,8 +19,8 @@
 #include <poll.h>
 #include <sys/socket.h>         // SO_*, MSG_*
 
-#include "net/address.hpp"
-#include "net/error.hpp"
+#include "address.hpp"
+#include "error.hpp"
 
 
 // Note: very simplified socket class, only what the Wii U supports.

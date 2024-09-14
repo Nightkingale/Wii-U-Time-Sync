@@ -20,11 +20,8 @@ WUT_ROOT := $(DEVKITPRO)/wut
 # PLUGIN_AUTHOR sets the author of the plugin.
 # PLUGIN_LICENSE sets the license of the plugin.
 #-------------------------------------------------------------------------------
-PLUGIN_NAME        := Wii U Time Sync
-PLUGIN_DESCRIPTION := A plugin that synchronizes the system clock to the Internet.
-PLUGIN_VERSION     := v3.1.0
-PLUGIN_AUTHOR      := Nightkingale, Daniel K. O.
-PLUGIN_LICENSE     := MIT
+PLUGIN_NAME    := Wii U Time Sync
+PLUGIN_VERSION := v3.1.0+
 
 #-------------------------------------------------------------------------------
 # TARGET is the name of the output.
@@ -35,9 +32,9 @@ PLUGIN_LICENSE     := MIT
 #-------------------------------------------------------------------------------
 TARGET   := Wii_U_Time_Sync
 BUILD    := build
-SOURCES  := source source/net source/wupsxx
+SOURCES  := source source/net external/libwupsxx/src
 DATA     := data
-INCLUDES := include
+INCLUDES := include external/libwupsxx/include
 
 #-------------------------------------------------------------------------------
 # DEBUG sets the debug flag for the plugin.
@@ -65,10 +62,7 @@ CFLAGS := $(WARN_FLAGS) $(OPTFLAGS) $(MACHDEP)
 CXXFLAGS := $(CFLAGS) -std=c++23
 
 DEFINES := '-DPLUGIN_NAME="$(PLUGIN_NAME)"'                   \
-           '-DPLUGIN_DESCRIPTION="$(PLUGIN_DESCRIPTION)"'     \
-           '-DPLUGIN_VERSION="$(PLUGIN_VERSION)"'             \
-           '-DPLUGIN_AUTHOR="$(PLUGIN_AUTHOR)"'               \
-           '-DPLUGIN_LICENSE="$(PLUGIN_LICENSE)"'
+           '-DPLUGIN_VERSION="$(PLUGIN_VERSION)"'
 
 # Note: INCLUDE will be defined later, so CPPFLAGS has to be of the recursive flavor.
 CPPFLAGS = $(INCLUDE) -D__WIIU__ -D__WUT__ -D__WUPS__  $(DEFINES)
