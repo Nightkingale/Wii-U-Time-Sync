@@ -89,7 +89,7 @@ clock_item::on_started()
     catch (std::exception& e) {
         status_msg = e.what();
     }
-    current_state = state::finished;
+    current_state = state::stopped;
 }
 
 

@@ -47,10 +47,10 @@ synchronize_item::on_started()
         try {
             logger::guard lguard;
             core::run(token, true);
-            current_state = state::finished;
+            current_state = state::stopped;
         }
         catch (std::exception& e) {
-            current_state = state::finished;
+            current_state = state::stopped;
             throw;
         }
     };
