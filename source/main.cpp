@@ -7,9 +7,6 @@
  * SPDX-License-Identifier: MIT
  */
 
-#include <exception>
-#include <thread>
-
 #include <wups.h>
 
 #include <wupsxx/logger.hpp>
@@ -36,26 +33,12 @@ INITIALIZE_PLUGIN()
 
     cfg::init();
 
-    if (cfg::sync_on_boot) {
-        std::jthread t{
-            [](std::stop_token token)
-            {
-                wups::logger::guard lguard{PLUGIN_NAME};
-                notify::guard nguard;
-                try {
-                    core::run(token, false);
-                }
-                catch (std::exception& e) {
-                    notify::error(notify::level::normal, e.what());
-                }
-            }
-        };
-        t.detach();
-    }
+    if (cfg::sync_on_boot)
+        core::background::run();
 }
 
 
 DEINITIALIZE_PLUGIN()
 {
-    // TODO: should clean up any worker thread
+    core::background::stop();
 }

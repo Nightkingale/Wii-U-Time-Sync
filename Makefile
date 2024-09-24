@@ -91,18 +91,15 @@ LIBDIRS	:= $(WUMS_ROOT) $(WUPS_ROOT) $(WUT_ROOT) $(PORTLIBS)
 ifneq ($(BUILD),$(notdir $(CURDIR)))
 #-------------------------------------------------------------------------------
 
-export OUTPUT	:=	$(CURDIR)/$(TARGET)
 export TOPDIR	:=	$(CURDIR)
+export OUTPUT	:=	$(TOPDIR)/$(TARGET)
+export VPATH	:=	$(TOPDIR)
+export DEPSDIR	:=	$(TOPDIR)/$(BUILD)
 
-export VPATH	:=	$(foreach dir,$(SOURCES),$(CURDIR)/$(dir)) \
-			$(foreach dir,$(DATA),$(CURDIR)/$(dir))
-
-export DEPSDIR	:=	$(CURDIR)/$(BUILD)
-
-CFILES		:=	$(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.c)))
-CPPFILES	:=	$(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.cpp)))
-SFILES		:=	$(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.s)))
-BINFILES	:=	$(foreach dir,$(DATA),$(notdir $(wildcard $(dir)/*.*)))
+CFILES		:=	$(foreach dir,$(SOURCES),$(wildcard $(dir)/*.c))
+CPPFILES	:=	$(foreach dir,$(SOURCES),$(wildcard $(dir)/*.cpp))
+SFILES		:=	$(foreach dir,$(SOURCES),$(wildcard $(dir)/*.s))
+BINFILES	:=	$(foreach dir,$(DATA),$(wildcard $(dir)/*.*))
 
 #-------------------------------------------------------------------------------
 # use CXX for linking C++ projects, CC for standard C
@@ -120,10 +117,10 @@ endif
 
 export OFILES_BIN	:=	$(addsuffix .o,$(BINFILES))
 export OFILES_SRC	:=	$(CPPFILES:.cpp=.o) $(CFILES:.c=.o) $(SFILES:.s=.o)
-export OFILES 	:=	$(OFILES_BIN) $(OFILES_SRC)
+export OFILES		:=	$(OFILES_BIN) $(OFILES_SRC)
 export HFILES_BIN	:=	$(addsuffix .h,$(subst .,_,$(BINFILES)))
 
-export INCLUDE	:=	$(foreach dir,$(INCLUDES),-I$(CURDIR)/$(dir)) \
+export INCLUDE	:=	$(foreach dir,$(INCLUDES),-I$(TOPDIR)/$(dir)) \
 			$(foreach dir,$(LIBDIRS),-I$(dir)/include)
 
 export LIBPATHS	:=	$(foreach dir,$(LIBDIRS),-L$(dir)/lib)
@@ -135,7 +132,8 @@ all: $(BUILD)
 
 $(BUILD):
 	@[ -d $@ ] || mkdir -p $@
-	$(MAKE) -C $(BUILD) -f $(CURDIR)/Makefile V=$(DEBUG)
+	mkdir -p $(addprefix build/,$(sort $(dir $(OFILES))))
+	$(MAKE) -C $(BUILD) -f $(TOPDIR)/Makefile V=$(DEBUG)
 
 #-------------------------------------------------------------------------------
 clean:

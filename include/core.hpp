@@ -28,7 +28,16 @@ namespace core {
     run(std::stop_token token,
         bool silent);
 
+
     std::string local_clock_to_string();
+
+
+    namespace background {
+
+        void run();
+        void stop();
+
+    } // namespace background
 
 } // namespace core
 

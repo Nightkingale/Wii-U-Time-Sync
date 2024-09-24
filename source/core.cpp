@@ -432,4 +432,64 @@ namespace core {
         return ticks_to_string(OSGetTime());
     }
 
+
+    namespace background {
+
+        std::stop_source stopper{std::nostopstate};
+        std::atomic_bool running;
+
+        void
+        run()
+        {
+            if (running)
+                return;
+
+            running = true;
+
+            std::jthread t{
+                [](std::stop_token token)
+                {
+                    wups::logger::guard lguard{PLUGIN_NAME};
+                    notify::guard nguard;
+                    try {
+                        core::run(token, false);
+                    }
+                    catch (std::exception& e) {
+                        notify::error(notify::level::normal, e.what());
+                    }
+                    running = false;
+                }
+            };
+
+            stopper = t.get_stop_source();
+
+            t.detach();
+        }
+
+
+        void
+        stop()
+        {
+            if (running) {
+                stopper.request_stop();
+
+                // Wait up to ~10 seconds for the thread to flag it stopped running.
+                unsigned max_tries = 100;
+                do {
+                    std::this_thread::sleep_for(100ms);
+                } while (running && --max_tries);
+
+                if (max_tries == 0)
+                    logger::printf("WARNING: Background thread did not stop!\n");
+
+                stopper = std::stop_source{std::nostopstate};
+            }
+        }
+
+
+    } // namespace background
+
+
+
+
 } // namespace core
