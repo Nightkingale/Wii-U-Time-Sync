@@ -56,6 +56,26 @@ namespace utils {
               std::chrono::minutes>
     fetch_timezone(int idx);
 
+
+    // RAII class to ensure network is working.
+    // It blocks until the network is available, of throws std::runtime_error.
+    class network_guard {
+
+        struct init_guard {
+            init_guard();
+            ~init_guard();
+        };
+
+        struct connect_guard {
+            connect_guard();
+            ~connect_guard();
+        };
+
+        init_guard init;
+        connect_guard conn;
+
+    };
+
 } // namespace utils
 
 #endif
