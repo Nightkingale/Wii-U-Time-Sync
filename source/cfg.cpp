@@ -192,10 +192,8 @@ namespace cfg {
     {
         logger::initialize(PLUGIN_NAME);
 
-        // logger::printf("reloading configs\n");
         cfg::reload();
 
-        // logger::printf("building config items\n");
         root.add(make_config_screen());
         root.add(make_preview_screen());
         root.add(synchronize_item::create());
