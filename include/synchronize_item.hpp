@@ -18,8 +18,8 @@
 
 struct synchronize_item : wups::config::button_item {
 
-    std::future<void> sync_result;
-    std::stop_source sync_stopper;
+    std::future<void> task_result;
+    std::stop_source task_stopper;
 
 
     synchronize_item();

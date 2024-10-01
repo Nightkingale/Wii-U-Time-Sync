@@ -110,6 +110,8 @@ clock_item::run()
     using std::to_string;
     using time_utils::seconds_to_human;
 
+    utils::network_guard net_guard;
+
     for (auto& [key, value] : server_infos) {
         value.name->text.clear();
         value.correction->text.clear();
