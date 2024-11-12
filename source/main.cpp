@@ -32,13 +32,23 @@ INITIALIZE_PLUGIN()
     wups::logger::guard guard{PLUGIN_NAME};
 
     cfg::init();
-
-    if (cfg::sync_on_boot)
-        core::background::run();
 }
 
 
 DEINITIALIZE_PLUGIN()
+{
+    core::background::stop();
+}
+
+
+ON_APPLICATION_START()
+{
+    if (cfg::sync_on_boot)
+        core::background::run_once();
+}
+
+
+ON_APPLICATION_REQUESTS_EXIT()
 {
     core::background::stop();
 }

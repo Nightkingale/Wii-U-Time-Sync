@@ -7,6 +7,7 @@
  */
 
 #include <cstdio>
+#include <utility>
 
 #include <wupsxx/cafe_glyphs.h>
 #include <wupsxx/logger.hpp>

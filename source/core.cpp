@@ -110,6 +110,19 @@ namespace core {
     }
 
 
+    void
+    sleep_for(std::chrono::milliseconds t,
+              std::stop_token token)
+    {
+        using clock = std::chrono::steady_clock;
+        const auto deadline = clock::now() + t;
+        while (clock::now() < deadline) {
+            check_stop(token);
+            std::this_thread::sleep_for(100ms);
+        }
+    }
+
+
     // Note: hardcoded for IPv4, the Wii U doesn't have IPv6.
     std::pair<dbl_seconds, dbl_seconds>
     ntp_query(std::stop_token token,
@@ -438,28 +451,39 @@ namespace core {
     namespace background {
 
         std::stop_source stopper{std::nostopstate};
-        std::atomic_bool running;
+
+        enum class state_t : unsigned {
+            none,
+            started,
+            finished,
+            canceled,
+        };
+        std::atomic<state_t> state{state_t::none};
+
 
         void
         run()
         {
-            if (running)
-                return;
-
-            running = true;
+            state = state_t::started;
 
             std::jthread t{
                 [](std::stop_token token)
                 {
-                    wups::logger::guard lguard{PLUGIN_NAME};
-                    notify::guard nguard;
+                    wups::logger::guard logger_guard{PLUGIN_NAME};
+                    notify::guard notify_guard;
                     try {
+                        // Note: we wait 5 seconds, to minimize spurious network errors.
+                        sleep_for(5s, token);
                         core::run(token, false);
+                        state = state_t::finished;
+                    }
+                    catch (canceled_error& e) {
+                        state = state_t::canceled;
                     }
                     catch (std::exception& e) {
                         notify::error(notify::level::normal, e.what());
+                        state = state_t::finished;
                     }
-                    running = false;
                 }
             };
 
@@ -470,24 +494,31 @@ namespace core {
 
 
         void
+        run_once()
+        {
+            if (state != state_t::finished)
+                run();
+        }
+
+
+        void
         stop()
         {
-            if (running) {
+            if (state == state_t::started) {
                 stopper.request_stop();
 
                 // Wait up to ~10 seconds for the thread to flag it stopped running.
                 unsigned max_tries = 100;
                 do {
                     std::this_thread::sleep_for(100ms);
-                } while (running && --max_tries);
+                } while ((state == state_t::started) && --max_tries);
 
-                if (max_tries == 0)
+                if (state == state_t::started)
                     logger::printf("WARNING: Background thread did not stop!\n");
 
                 stopper = std::stop_source{std::nostopstate};
             }
         }
-
 
     } // namespace background
 

@@ -205,8 +205,10 @@ namespace cfg {
     void
     menu_close()
     {
-        if (cfg::sync_on_changes && important_vars_changed())
+        if (cfg::sync_on_changes && important_vars_changed()) {
+            core::background::stop();
             core::background::run();
+        }
 
         cfg::save();
 
