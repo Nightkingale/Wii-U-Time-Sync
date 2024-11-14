@@ -35,6 +35,7 @@ namespace core {
     namespace background {
 
         void run();
+        void run_once();
         void stop();
 
     } // namespace background
