@@ -1,7 +1,7 @@
 /*
  * Wii U Time Sync - A NTP client plugin for the Wii U.
  *
- * Copyright (C) 2024  Daniel K. O.
+ * Copyright (C) 2025  Daniel K. O.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -17,12 +17,12 @@
 #include <wupsxx/text_item.hpp>
 
 
-struct clock_item : wups::config::button_item {
+struct clock_item : wups::button_item {
 
     struct server_info {
-        wups::config::text_item* name = nullptr;
-        wups::config::text_item* correction = nullptr;
-        wups::config::text_item* latency = nullptr;
+        wups::text_item* name = nullptr;
+        wups::text_item* correction = nullptr;
+        wups::text_item* latency = nullptr;
     };
 
 

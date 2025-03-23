@@ -1,7 +1,7 @@
 /*
  * Wii U Time Sync - A NTP client plugin for the Wii U.
  *
- * Copyright (C) 2024  Daniel K. O.
+ * Copyright (C) 2025  Daniel K. O.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -9,39 +9,55 @@
 #ifndef NOTIFY_HPP
 #define NOTIFY_HPP
 
-#include <string>
+#include <chrono>
 
 
 namespace notify {
 
-
+    // Verbosity level for notifications.
     enum class level : int {
         quiet = 0,
         normal = 1,
         verbose = 2
     };
 
-    void initialize();
 
-    void finalize();
+    void
+    initialize();
 
-
-    void error(level lvl, const std::string& arg);
-
-    void info(level lvl, const std::string& arg);
-
-    void success(level lvl, const std::string& arg);
+    void
+    finalize();
 
 
-    // RAII type to ensure it's intialized and finalized
-    class guard {
-        bool must_finalize;
-    public:
-        guard(bool init = true);
-        ~guard();
-        void release();
-    };
+    void
+    set_max_level(level lvl)
+        noexcept;
 
-}
+    void
+    set_duration(std::chrono::milliseconds dur)
+        noexcept;
+
+    __attribute__(( __format__ (__printf__, 2, 3)))
+    void
+    error(level lvl,
+          const char* fmt,
+          ...)
+        noexcept;
+
+    __attribute__(( __format__ (__printf__, 2, 3)))
+    void
+    info(level lvl,
+         const char* fmt,
+         ...)
+        noexcept;
+
+    __attribute__(( __format__ (__printf__, 2, 3)))
+    void
+    success(level lvl,
+            const char* fmt,
+            ...)
+        noexcept;
+
+} // namespace notify
 
 #endif

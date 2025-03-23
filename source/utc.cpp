@@ -1,7 +1,7 @@
 /*
  * Wii U Time Sync - A NTP client plugin for the Wii U.
  *
- * Copyright (C) 2024  Daniel K. O.
+ * Copyright (C) 2025  Daniel K. O.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -28,7 +28,7 @@ namespace utc {
     now()
         noexcept
     {
-        return timestamp{ local_time() - cfg::utc_offset };
+        return timestamp{ local_time() - cfg::utc_offset.value };
     }
 
 } // namespace utc

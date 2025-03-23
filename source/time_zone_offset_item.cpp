@@ -1,7 +1,7 @@
 /*
  * Wii U Time Sync - A NTP client plugin for the Wii U.
  *
- * Copyright (C) 2024  Daniel K. O.
+ * Copyright (C) 2025  Daniel K. O.
  * Copyright (C) 2024  Nightkingale
  *
  * SPDX-License-Identifier: MIT
@@ -21,23 +21,18 @@
 
 
 using namespace std::literals;
-using namespace wups::config;
 
 
-time_zone_offset_item::time_zone_offset_item(const std::string& label,
-                                             std::chrono::minutes& variable,
-                                             std::chrono::minutes default_value) :
-    var_item{label, variable, default_value},
+time_zone_offset_item::time_zone_offset_item(wups::option<std::chrono::minutes>& opt) :
+    var_item{opt},
     editing{field_id::hours}
 {}
 
 
 std::unique_ptr<time_zone_offset_item>
-time_zone_offset_item::create(const std::string& label,
-                              std::chrono::minutes& variable,
-                              std::chrono::minutes default_value)
+time_zone_offset_item::create(wups::option<std::chrono::minutes>& opt)
 {
-    return std::make_unique<time_zone_offset_item>(label, variable, default_value);
+    return std::make_unique<time_zone_offset_item>(opt);
 }
 
 
@@ -87,8 +82,8 @@ time_zone_offset_item::get_focused_display(char* buf, std::size_t size)
 }
 
 
-focus_status
-time_zone_offset_item::on_input(const simple_pad_data& input)
+wups::focus_status
+time_zone_offset_item::on_input(const wups::simple_pad_data& input)
 {
 
     if (input.buttons_d & WUPS_CONFIG_BUTTON_LEFT)
@@ -99,10 +94,10 @@ time_zone_offset_item::on_input(const simple_pad_data& input)
         if (editing == field_id::hours)
             editing = field_id::minutes;
 
-    if (input.pressed_or_repeated(WUPS_CONFIG_BUTTON_UP))
+    if (input.pressed_or_long_held(WUPS_CONFIG_BUTTON_UP))
         variable += editing == field_id::hours ? 1h : 1min;
 
-    if (input.pressed_or_repeated(WUPS_CONFIG_BUTTON_DOWN))
+    if (input.pressed_or_long_held(WUPS_CONFIG_BUTTON_DOWN))
         variable -= editing == field_id::hours ? 1h : 1min;
 
     variable = std::clamp<std::chrono::minutes>(variable, -12h, 14h);

@@ -1,7 +1,7 @@
 /*
  * Wii U Time Sync - A NTP client plugin for the Wii U.
  *
- * Copyright (C) 2024  Daniel K. O.
+ * Copyright (C) 2025  Daniel K. O.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -16,7 +16,7 @@
 #include <wupsxx/button_item.hpp>
 
 
-struct synchronize_item : wups::config::button_item {
+struct synchronize_item : wups::button_item {
 
     std::future<void> task_result;
     std::stop_source task_stopper;

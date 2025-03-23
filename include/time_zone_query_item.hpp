@@ -1,7 +1,7 @@
 /*
  * Wii U Time Sync - A NTP client plugin for the Wii U.
  *
- * Copyright (C) 2024  Daniel K. O.
+ * Copyright (C) 2025  Daniel K. O.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -14,7 +14,7 @@
 #include <wupsxx/var_item.hpp>
 
 
-class time_zone_query_item : public wups::config::var_item<int> {
+class time_zone_query_item : public wups::var_item<int> {
 
     // We store the geolocation option as an integer, no point in parsing any complex
     // string since we need specific implementations for each service.
@@ -23,15 +23,11 @@ class time_zone_query_item : public wups::config::var_item<int> {
 
 public:
 
-    time_zone_query_item(const std::string& label,
-                         int& variable,
-                         int default_value);
+    time_zone_query_item(wups::option<int>& opt);
 
     static
     std::unique_ptr<time_zone_query_item>
-    create(const std::string& label,
-           int& variable,
-           int default_value);
+    create(wups::option<int>& opt);
 
 
     virtual
@@ -43,8 +39,8 @@ public:
     get_focused_display(char* buf, std::size_t size) const override;
 
     virtual
-    wups::config::focus_status
-    on_input(const wups::config::simple_pad_data& input) override;
+    wups::focus_status
+    on_input(const wups::simple_pad_data& input) override;
 
 private:
 

@@ -15,7 +15,7 @@
 #include <wupsxx/var_item.hpp>
 
 
-struct time_zone_offset_item : wups::config::var_item<std::chrono::minutes> {
+struct time_zone_offset_item : wups::var_item<std::chrono::minutes> {
 
     enum field_id : unsigned {
         hours,
@@ -26,23 +26,19 @@ struct time_zone_offset_item : wups::config::var_item<std::chrono::minutes> {
     field_id editing;
 
 
-    time_zone_offset_item(const std::string& label,
-                          std::chrono::minutes& variable,
-                          std::chrono::minutes default_value);
+    time_zone_offset_item(wups::option<std::chrono::minutes>& opt);
 
     static
     std::unique_ptr<time_zone_offset_item>
-    create(const std::string& label,
-           std::chrono::minutes& variable,
-           std::chrono::minutes default_value);
+    create(wups::option<std::chrono::minutes>& opt);
 
     virtual void get_display(char* buf, std::size_t size) const override;
 
     virtual void get_focused_display(char* buf, std::size_t size) const override;
 
     virtual
-    wups::config::focus_status
-    on_input(const wups::config::simple_pad_data& input) override;
+    wups::focus_status
+    on_input(const wups::simple_pad_data& input) override;
 
 
 private:

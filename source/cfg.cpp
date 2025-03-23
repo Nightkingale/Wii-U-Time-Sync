@@ -1,17 +1,20 @@
 /*
  * Wii U Time Sync - A NTP client plugin for the Wii U.
  *
- * Copyright (C) 2024  Daniel K. O.
+ * Copyright (C) 2025  Daniel K. O.
  * Copyright (C) 2024  Nightkingale
  *
  * SPDX-License-Identifier: MIT
  */
+
+#include <vector>
 
 #include <wupsxx/bool_item.hpp>
 #include <wupsxx/category.hpp>
 #include <wupsxx/duration_items.hpp>
 #include <wupsxx/init.hpp>
 #include <wupsxx/logger.hpp>
+#include <wupsxx/option.hpp>
 #include <wupsxx/storage.hpp>
 #include <wupsxx/text_item.hpp>
 
@@ -33,69 +36,61 @@ using std::chrono::milliseconds;
 using std::chrono::minutes;
 using std::chrono::seconds;
 
+using wups::category;
+
 using namespace std::literals;
-using namespace wups::config;
 namespace logger = wups::logger;
 
 
 namespace cfg {
 
-    namespace keys {
-        const char* auto_tz         = "auto_tz";
-        const char* msg_duration    = "msg_duration";
-        const char* notify          = "notify";
-        const char* server          = "server";
-        const char* sync_on_boot    = "sync_on_boot";
-        const char* sync_on_changes = "sync_on_changes";
-        const char* threads         = "threads";
-        const char* timeout         = "timeout";
-        const char* tolerance       = "tolerance";
-        const char* tz_service      = "tz_service";
-        const char* utc_offset      = "utc_offset";
-    }
+    WUPSXX_OPTION("Synchronize On Boot",
+                  bool, sync_on_boot, true);
+
+    WUPSXX_OPTION("Synchronize After Changing Configuration",
+                  bool, sync_on_changes, true);
+
+    WUPSXX_OPTION("Show Notifications",
+                  int, notify, 0, 0, 2);
+
+    WUPSXX_OPTION("  └ Notification Duration",
+                  seconds, msg_duration, 5s, 0s, 15s);
+
+    WUPSXX_OPTION("Time Offset (UTC)",
+                  minutes, utc_offset, 0min, -12h, 14h);
+
+    WUPSXX_OPTION("  └ Detect Time Zone",
+                  int, tz_service, 0, 0, utils::get_num_tz_services());
+
+    WUPSXX_OPTION("    └ Auto Update Time Zone",
+                  bool, auto_tz, false);
+
+    WUPSXX_OPTION("Timeout",
+                  seconds, timeout, 5s, 1s, 10s);
+
+    WUPSXX_OPTION("Tolerance",
+                  milliseconds, tolerance, 1000ms, 0ms, 10s);
+
+    WUPSXX_OPTION("Background Threads",
+                  int, threads, 4, 0, 4);
+
+    WUPSXX_OPTION("NTP servers",
+                  std::string, server, "pool.ntp.org");
 
 
-    namespace labels {
-        const char* auto_tz         = "   └ Auto Update Time Zone";
-        const char* msg_duration    = " └ Notification Duration";
-        const char* notify          = "Show Notifications";
-        const char* server          = "NTP Servers";
-        const char* sync_on_boot    = "Synchronize On Boot";
-        const char* sync_on_changes = "Synchronize After Changing Configuration";
-        const char* threads         = "Background Threads";
-        const char* timeout         = "Timeout";
-        const char* tolerance       = "Tolerance";
-        const char* tz_service      = " └ Detect Time Zone";
-        const char* utc_offset      = "Time Offset (UTC)";
-    }
-
-
-    namespace defaults {
-        const bool         auto_tz         = false;
-        const seconds      msg_duration    = 5s;
-        const int          notify          = 0;
-        const std::string  server          = "pool.ntp.org";
-        const bool         sync_on_boot    = false;
-        const bool         sync_on_changes = true;
-        const int          threads         = 4;
-        const seconds      timeout         = 5s;
-        const milliseconds tolerance       = 500ms;
-        const int          tz_service      = 0;
-        const minutes      utc_offset      = 0min;
-    }
-
-
-    bool         auto_tz         = defaults::auto_tz;
-    seconds      msg_duration    = defaults::msg_duration;
-    int          notify          = defaults::notify;
-    std::string  server          = defaults::server;
-    bool         sync_on_boot    = defaults::sync_on_boot;
-    bool         sync_on_changes = defaults::sync_on_changes;
-    int          threads         = defaults::threads;
-    seconds      timeout         = defaults::timeout;
-    milliseconds tolerance       = defaults::tolerance;
-    int          tz_service      = defaults::tz_service;
-    minutes      utc_offset      = 0min;
+    std::vector<wups::option_base*> all_options = {
+        &sync_on_boot,
+        &sync_on_changes,
+        &notify,
+        &msg_duration,
+        &utc_offset,
+        &tz_service,
+        &auto_tz,
+        &timeout,
+        &tolerance,
+        &threads,
+        &server,
+    };
 
 
     // variables that, if changed, may affect the sync
@@ -110,78 +105,52 @@ namespace cfg {
     void
     save_important_vars()
     {
-        previous::auto_tz = auto_tz;
-        previous::tolerance = tolerance;
-        previous::tz_service = tz_service;
-        previous::utc_offset = utc_offset;
+        previous::auto_tz    = auto_tz.value;
+        previous::tolerance  = tolerance.value;
+        previous::tz_service = tz_service.value;
+        previous::utc_offset = utc_offset.value;
     }
 
 
     bool
     important_vars_changed()
     {
-        return previous::auto_tz != auto_tz
-            || previous::tolerance != tolerance
-            || previous::tz_service != tz_service
-            || previous::utc_offset != utc_offset;
+        return previous::auto_tz != auto_tz.value
+            || previous::tolerance != tolerance.value
+            || previous::tz_service != tz_service.value
+            || previous::utc_offset != utc_offset.value;
     }
 
 
     category
     make_config_screen()
     {
+        using wups::make_item;
+
         category cat{"Configuration"};
 
-        cat.add(bool_item::create(cfg::labels::sync_on_boot,
-                                  cfg::sync_on_boot,
-                                  cfg::defaults::sync_on_boot,
-                                  "on", "off"));
+        cat.add(make_item(sync_on_boot, "on", "off"));
 
-        cat.add(bool_item::create(cfg::labels::sync_on_changes,
-                                  cfg::sync_on_changes,
-                                  cfg::defaults::sync_on_changes,
-                                  "on", "off"));
+        cat.add(make_item(sync_on_changes, "on", "off"));
 
-        cat.add(verbosity_item::create(cfg::labels::notify,
-                                       cfg::notify,
-                                       cfg::defaults::notify));
+        cat.add(verbosity_item::create(notify));
 
-        cat.add(seconds_item::create(cfg::labels::msg_duration,
-                                     cfg::msg_duration,
-                                     cfg::defaults::msg_duration,
-                                     1s, 30s, 5s));
+        cat.add(make_item(msg_duration));
 
-        cat.add(time_zone_offset_item::create(cfg::labels::utc_offset,
-                                              cfg::utc_offset,
-                                              cfg::defaults::utc_offset));
+        cat.add(time_zone_offset_item::create(utc_offset));
 
-        cat.add(time_zone_query_item::create(cfg::labels::tz_service,
-                                             cfg::tz_service,
-                                             cfg::defaults::tz_service));
+        cat.add(time_zone_query_item::create(tz_service));
 
-        cat.add(bool_item::create(cfg::labels::auto_tz,
-                                  cfg::auto_tz,
-                                  cfg::defaults::auto_tz,
-                                  "on", "off"));
+        cat.add(make_item(auto_tz, "on", "off"));
 
-        cat.add(seconds_item::create(cfg::labels::timeout,
-                                     cfg::timeout,
-                                     cfg::defaults::timeout,
-                                     1s, 10s, 5s));
+        cat.add(make_item(timeout));
 
-        cat.add(milliseconds_item::create(cfg::labels::tolerance,
-                                          cfg::tolerance,
-                                          cfg::defaults::tolerance,
-                                          0ms, 5000ms, 100ms));
+        cat.add(make_item(tolerance, 500ms, 100ms));
 
-        cat.add(int_item::create(cfg::labels::threads,
-                                 cfg::threads,
-                                 cfg::defaults::threads,
-                                 0, 8, 2));
+        cat.add(make_item(threads));
 
         // show current NTP server address, no way to change it.
-        cat.add(text_item::create(cfg::labels::server,
-                                  cfg::server));
+        cat.add(make_item(server.label, server.value));
 
         return cat;
     }
@@ -190,9 +159,10 @@ namespace cfg {
     void
     menu_open(category& root)
     {
-        logger::initialize(PLUGIN_NAME);
+        // Keep logger active until the menu closes
+        logger::initialize();
 
-        cfg::reload();
+        reload();
 
         root.add(make_config_screen());
         root.add(make_preview_screen());
@@ -205,14 +175,17 @@ namespace cfg {
     void
     menu_close()
     {
-        if (cfg::sync_on_changes && important_vars_changed()) {
+        logger::guard guard; // keep logger active until the function ends
+        logger::finalize(); // clean up the initialize() from menu_open()
+
+        notify::set_max_level(static_cast<notify::level>(notify.value));
+
+        if (sync_on_changes.value && important_vars_changed()) {
             core::background::stop();
             core::background::run();
         }
 
-        cfg::save();
-
-        logger::finalize();
+        save();
     }
 
 
@@ -223,11 +196,11 @@ namespace cfg {
     init()
     {
         try {
-            wups::config::init(PLUGIN_NAME,
-                               menu_open,
-                               menu_close);
-            cfg::load();
-            cfg::migrate_old_config();
+            wups::init(PLUGIN_NAME,
+                       menu_open,
+                       menu_close);
+            load();
+            migrate_old_config();
         }
         catch (std::exception& e) {
             logger::printf("Init error: %s\n", e.what());
@@ -238,24 +211,9 @@ namespace cfg {
     void
     load()
     {
-        try {
-#define LOAD(x) wups::storage::load_or_init(keys::x, x, defaults::x)
-            LOAD(auto_tz);
-            LOAD(msg_duration);
-            LOAD(notify);
-            LOAD(server);
-            LOAD(sync_on_boot);
-            LOAD(sync_on_changes);
-            LOAD(threads);
-            LOAD(timeout);
-            LOAD(tolerance);
-            LOAD(tz_service);
-            LOAD(utc_offset);
-#undef LOAD
-        }
-        catch (std::exception& e) {
-            logger::printf("Error loading config: %s\n", e.what());
-        }
+        for (auto& opt : all_options)
+            opt->load();
+        notify::set_max_level(static_cast<notify::level>(notify.value));
     }
 
 
@@ -263,7 +221,7 @@ namespace cfg {
     reload()
     {
         try {
-            wups::storage::reload();
+            wups::reload();
             load();
         }
         catch (std::exception& e) {
@@ -276,20 +234,9 @@ namespace cfg {
     save()
     {
         try {
-#define STORE(x) wups::storage::store(keys::x, x)
-            STORE(auto_tz);
-            STORE(msg_duration);
-            STORE(notify);
-            STORE(server);
-            STORE(sync_on_boot);
-            STORE(sync_on_changes);
-            STORE(threads);
-            STORE(timeout);
-            STORE(tolerance);
-            STORE(tz_service);
-            STORE(utc_offset);
-#undef STORE
-            wups::storage::save();
+            for (const auto& opt : all_options)
+                opt->store();
+            wups::save();
         }
         catch (std::exception& e) {
             logger::printf("Error saving config: %s\n", e.what());
@@ -300,32 +247,32 @@ namespace cfg {
     void
     migrate_old_config()
     {
-        using std::to_string;
-
         // check for leftovers from old versions
-        auto hrs = wups::storage::load<hours>("hours");
-        auto min = wups::storage::load<minutes>("minutes");
-        if (hrs || min) {
-            hours h = hrs.value_or(0h);
-            minutes m = min.value_or(0min);
-            minutes offset = h + m;
+        using std::to_string;
+        using wups::to_string;
+
+        hours old_hours = 0h;
+        minutes old_minutes = 0min;
+        if (wups::load("hours", old_hours) || wups::load("minutes", old_minutes)) {
+            minutes offset = old_hours + old_minutes;
             set_and_store_utc_offset(offset);
             WUPSStorageAPI::DeleteItem("hours");
             WUPSStorageAPI::DeleteItem("minutes");
             save();
             logger::printf("Migrated old config: hours=%s, minutes=%s -> utc_offset=%s.\n",
-                           to_string(h.count()).c_str(),
-                           to_string(m.count()).c_str(),
-                           time_utils::tz_offset_to_string(utc_offset).c_str());
+                           to_string(old_hours).c_str(),
+                           to_string(old_minutes).c_str(),
+                           time_utils::tz_offset_to_string(utc_offset.value).c_str());
         }
-        auto sync = wups::storage::load<bool>("sync");
-        if (sync) {
+
+        bool old_sync = false;
+        if (wups::load("sync", old_sync)) {
             WUPSStorageAPI::DeleteItem("sync");
-            sync_on_boot = *sync;
+            sync_on_boot.value = old_sync;
             save();
             logger::printf("Migrated old config: sync=%s -> sync_on_boot=%s\n",
-                           (*sync ? "true" : "false"),
-                           (sync_on_boot ? "true" : "false"));
+                           (old_sync ? "true" : "false"),
+                           (sync_on_boot.value ? "true" : "false"));
         }
     }
 
@@ -333,15 +280,15 @@ namespace cfg {
     void
     set_and_store_utc_offset(minutes offset)
     {
-        logger::guard guard(PLUGIN_NAME);
+        logger::guard guard;
         /*
          * Normally, `utc_offset` is saved when closing the config menu.
          * If auto_tz is enabled, it will be updated and saved outside the config menu.
          */
-        utc_offset = offset;
         try {
-            wups::storage::store(keys::utc_offset, utc_offset);
-            wups::storage::save();
+            utc_offset.value = offset;
+            utc_offset.store();
+            wups::save();
         }
         catch (std::exception& e) {
             logger::printf("Error storing utc_offset: %s\n", e.what());

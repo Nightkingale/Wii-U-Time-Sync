@@ -1,7 +1,7 @@
 /*
  * Wii U Time Sync - A NTP client plugin for the Wii U.
  *
- * Copyright (C) 2024  Daniel K. O.
+ * Copyright (C) 2025  Daniel K. O.
  * Copyright (C) 2024  Nightkingale
  *
  * SPDX-License-Identifier: MIT
@@ -29,8 +29,9 @@ WUPS_USE_STORAGE(PLUGIN_NAME);
 
 INITIALIZE_PLUGIN()
 {
-    wups::logger::guard guard{PLUGIN_NAME};
-
+    wups::logger::set_prefix(PLUGIN_NAME);
+    wups::logger::guard guard;
+    notify::initialize();
     cfg::init();
 }
 
@@ -38,12 +39,13 @@ INITIALIZE_PLUGIN()
 DEINITIALIZE_PLUGIN()
 {
     core::background::stop();
+    notify::finalize();
 }
 
 
 ON_APPLICATION_START()
 {
-    if (cfg::sync_on_boot)
+    if (cfg::sync_on_boot.value)
         core::background::run_once();
 }
 

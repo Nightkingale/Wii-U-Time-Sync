@@ -1,7 +1,7 @@
 /*
  * Wii U Time Sync - A NTP client plugin for the Wii U.
  *
- * Copyright (C) 2024  Daniel K. O.
+ * Copyright (C) 2025  Daniel K. O.
  * Copyright (C) 2024  Nightkingale
  *
  * SPDX-License-Identifier: MIT
@@ -18,8 +18,8 @@
 #include "utils.hpp"
 
 
-using wups::config::category;
-using wups::config::text_item;
+using wups::category;
+using wups::text_item;
 
 
 /*
@@ -36,7 +36,7 @@ make_preview_screen()
 
     cat.add(std::move(clock));
 
-    auto servers = utils::split(cfg::server, " \t,;");
+    auto servers = utils::split(cfg::server.value, " \t,;");
     for (const auto& server : servers) {
         if (!server_infos.contains(server)) {
             auto& si = server_infos[server];
