@@ -7,7 +7,7 @@
  */
 
 #ifndef SYNCHRONIZE_ITEM_HPP
-#define  SYNCHRONIZE_ITEM_HPP
+#define SYNCHRONIZE_ITEM_HPP
 
 #include <future>
 #include <memory>
@@ -32,19 +32,21 @@ struct synchronize_item : wups::button_item {
 
     virtual
     void
-    on_started() override;
+    on_started()
+        override;
 
 
     virtual
     void
-    on_finished() override;
+    on_finished()
+        override;
 
 
     virtual
     void
-    on_cancel() override;
+    on_cancel()
+        override;
 
 };
-
 
 #endif

@@ -20,12 +20,14 @@ namespace time_utils {
 
 
     // Generate time duration strings for humans.
-    std::string seconds_to_human(dbl_seconds s, bool show_positive = false);
+    std::string
+    seconds_to_human(dbl_seconds s,
+                     bool show_positive = false);
 
 
-    std::string tz_offset_to_string(std::chrono::minutes offset);
+    std::string
+    tz_offset_to_string(std::chrono::minutes offset);
 
 }
-
 
 #endif

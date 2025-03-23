@@ -27,19 +27,26 @@ namespace notify {
 
     void
     initialize()
+        noexcept
     {
-        wups::notify::initialize(PLUGIN_NAME);
+        try {
+            wups::notify::initialize(PLUGIN_NAME);
 
-        wups::notify::info::set_text_color(255, 255, 255, 255);
-        wups::notify::info::set_bg_color(32, 32, 160, 255);
+            wups::notify::info::set_text_color(255, 255, 255, 255);
+            wups::notify::info::set_bg_color(32, 32, 160, 255);
 
-        wups::notify::error::set_text_color(255, 255, 255, 255);
-        wups::notify::error::set_bg_color(160, 32, 32, 255);
+            wups::notify::error::set_text_color(255, 255, 255, 255);
+            wups::notify::error::set_bg_color(160, 32, 32, 255);
+        }
+        catch (std::exception& e) {
+            logger::printf("notify::initialize() failed: %s\n", e.what());
+        }
     }
 
 
     void
     finalize()
+        noexcept
     {
         wups::notify::finalize();
     }

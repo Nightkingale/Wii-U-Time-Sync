@@ -23,7 +23,9 @@ namespace utc {
     };
 
 
-    timestamp now() noexcept;
+    timestamp
+    now()
+        noexcept;
 
 } // namespace utc
 

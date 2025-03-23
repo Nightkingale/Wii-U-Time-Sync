@@ -31,7 +31,7 @@ namespace cfg {
 
     void save_important_vars();
 
-    void init();
+    void init() noexcept;
 
     void load();
     void reload();

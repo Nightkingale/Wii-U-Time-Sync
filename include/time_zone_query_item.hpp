@@ -32,19 +32,25 @@ public:
 
     virtual
     void
-    get_display(char* buf, std::size_t size) const override;
+    get_display(char* buf,
+                std::size_t size)
+        const override;
 
     virtual
     void
-    get_focused_display(char* buf, std::size_t size) const override;
+    get_focused_display(char* buf,
+                        std::size_t size)
+        const override;
 
     virtual
     wups::focus_status
-    on_input(const wups::simple_pad_data& input) override;
+    on_input(const wups::simple_pad_data& input)
+        override;
 
 private:
 
-    void run();
+    void
+    run();
 
 };
 

@@ -11,7 +11,6 @@
 #include <string.h>             // BSD strlcpy()
 
 #include <wupsxx/cafe_glyphs.h>
-#include <wupsxx/logger.hpp>
 #include <wupsxx/storage.hpp>
 
 #include "time_zone_query_item.hpp"
@@ -21,7 +20,6 @@
 
 
 using namespace std::literals;
-namespace logger = wups::logger;
 
 
 namespace {

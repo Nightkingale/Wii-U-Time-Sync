@@ -20,9 +20,9 @@
 struct clock_item : wups::button_item {
 
     struct server_info {
-        wups::text_item* name = nullptr;
+        wups::text_item* name       = nullptr;
         wups::text_item* correction = nullptr;
-        wups::text_item* latency = nullptr;
+        wups::text_item* latency    = nullptr;
     };
 
 
@@ -40,7 +40,8 @@ struct clock_item : wups::button_item {
 
     virtual
     void
-    on_started() override;
+    on_started()
+        override;
 
 
     void

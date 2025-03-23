@@ -16,17 +16,19 @@ namespace notify {
 
     // Verbosity level for notifications.
     enum class level : int {
-        quiet = 0,
-        normal = 1,
-        verbose = 2
+        quiet   = 0,
+        normal  = 1,
+        verbose = 2,
     };
 
 
     void
-    initialize();
+    initialize()
+        noexcept;
 
     void
-    finalize();
+    finalize()
+        noexcept;
 
 
     void
@@ -36,6 +38,7 @@ namespace notify {
     void
     set_duration(std::chrono::milliseconds dur)
         noexcept;
+
 
     __attribute__(( __format__ (__printf__, 2, 3)))
     void
