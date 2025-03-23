@@ -21,15 +21,19 @@ namespace core {
 
     using time_utils::dbl_seconds;
 
-    std::pair<dbl_seconds, dbl_seconds> ntp_query(std::stop_token token,
-                                                  net::address address);
+
+    std::pair<dbl_seconds, dbl_seconds>
+    ntp_query(std::stop_token token,
+              net::address address);
+
 
     void
     run(std::stop_token token,
         bool silent);
 
 
-    std::string local_clock_to_string();
+    std::string
+    local_clock_to_string();
 
 
     namespace background {

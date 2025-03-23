@@ -1,7 +1,7 @@
 /*
  * Wii U Time Sync - A NTP client plugin for the Wii U.
  *
- * Copyright (C) 2024  Daniel K. O.
+ * Copyright (C) 2025  Daniel K. O.
  * Copyright (C) 2024  Nightkingale
  *
  * SPDX-License-Identifier: MIT
@@ -24,7 +24,6 @@
 
 
 using namespace std::literals;
-using namespace wups::config;
 
 using time_utils::dbl_seconds;
 
@@ -118,7 +117,7 @@ clock_item::run()
         value.latency->text.clear();
     }
 
-    auto servers = utils::split(cfg::server, " \t,;");
+    auto servers = utils::split(cfg::server.value, " \t,;");
 
     net::addrinfo::hints opts{ .type = net::socket::type::udp };
 
@@ -162,12 +161,12 @@ clock_item::run()
             if (!server_corrections.empty()) {
                 auto corr_stats = get_statistics(server_corrections);
                 si.correction->text = "min = "s + seconds_to_human(corr_stats.min, true)
-                    + ", max = "s + seconds_to_human(corr_stats.max, true)
-                    + ", avg = "s + seconds_to_human(corr_stats.avg, true);
+                                    + ", max = "s + seconds_to_human(corr_stats.max, true)
+                                    + ", avg = "s + seconds_to_human(corr_stats.avg, true);
                 auto late_stats = get_statistics(server_latencies);
                 si.latency->text = "min = "s + seconds_to_human(late_stats.min)
-                    + ", max = "s + seconds_to_human(late_stats.max)
-                    + ", avg = "s + seconds_to_human(late_stats.avg);
+                                 + ", max = "s + seconds_to_human(late_stats.max)
+                                 + ", avg = "s + seconds_to_human(late_stats.avg);
             } else {
                 si.correction->text = "No data.";
                 si.latency->text = "No data.";

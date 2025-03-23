@@ -33,6 +33,9 @@ PLUGIN_VERSION := v3.1.0+
 TARGET   := Wii_U_Time_Sync
 BUILD    := build
 SOURCES  := source source/net external/libwupsxx/src
+SOURCES_EXCLUDE := \
+	external/libwupsxx/src/shortcut.cpp \
+	external/libwupsxx/src/shortcut_item.cpp
 DATA     := data
 INCLUDES := include external/libwupsxx/include
 
@@ -53,9 +56,9 @@ endif
 #-------------------------------------------------------------------------------
 # options for code generation
 #-------------------------------------------------------------------------------
-WARN_FLAGS := -Wall -Wextra -Wundef -Wpointer-arith -Wcast-align
+WARN_FLAGS := -Wall -Wextra -Wundef -Wpointer-arith -Wcast-align -Wno-odr
 
-OPTFLAGS := -O2 -fipa-pta -ffunction-sections
+OPTFLAGS := -Os -fipa-pta -ffunction-sections -flto
 
 CFLAGS := $(WARN_FLAGS) $(OPTFLAGS) $(MACHDEP)
 
@@ -96,10 +99,10 @@ export OUTPUT	:=	$(TOPDIR)/$(TARGET)
 export VPATH	:=	$(TOPDIR)
 export DEPSDIR	:=	$(TOPDIR)/$(BUILD)
 
-CFILES		:=	$(foreach dir,$(SOURCES),$(wildcard $(dir)/*.c))
-CPPFILES	:=	$(foreach dir,$(SOURCES),$(wildcard $(dir)/*.cpp))
-SFILES		:=	$(foreach dir,$(SOURCES),$(wildcard $(dir)/*.s))
-BINFILES	:=	$(foreach dir,$(DATA),$(wildcard $(dir)/*.*))
+CFILES		:=	$(filter-out $(SOURCES_EXCLUDE),$(foreach dir,$(SOURCES),$(wildcard $(dir)/*.c)))
+CPPFILES	:=	$(filter-out $(SOURCES_EXCLUDE),$(foreach dir,$(SOURCES),$(wildcard $(dir)/*.cpp)))
+SFILES		:=	$(filter-out $(SOURCES_EXCLUDE),$(foreach dir,$(SOURCES),$(wildcard $(dir)/*.s)))
+BINFILES	:=	$(filter-out $(SOURCES_EXCLUDE),$(foreach dir,$(DATA),$(wildcard $(dir)/*.*)))
 
 #-------------------------------------------------------------------------------
 # use CXX for linking C++ projects, CC for standard C

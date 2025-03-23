@@ -1,7 +1,7 @@
 /*
  * Wii U Time Sync - A NTP client plugin for the Wii U.
  *
- * Copyright (C) 2024  Daniel K. O.
+ * Copyright (C) 2025  Daniel K. O.
  * Copyright (C) 2024  Nightkingale
  *
  * SPDX-License-Identifier: MIT
@@ -168,7 +168,7 @@ namespace core {
     try_again_poll:
         // cancellation point: before polling
         check_stop(token);
-        auto readable_status = sock.try_is_readable(cfg::timeout);
+        auto readable_status = sock.try_is_readable(cfg::timeout.value);
         if (!readable_status) {
             // Wii U OS can only handle 16 concurrent select()/poll() calls,
             // so we may need to try again later.
@@ -306,9 +306,6 @@ namespace core {
 
         utils::network_guard net_guard;
 
-        // ensure notification is initialized if needed
-        notify::guard notify_guard{cfg::notify > 0};
-
         static std::atomic<bool> executing = false;
         utils::exec_guard exec_guard{executing};
         if (!exec_guard.guarded) {
@@ -316,21 +313,23 @@ namespace core {
             throw runtime_error{"Skipping NTP task: operation already in progress."};
         }
 
-        if (cfg::auto_tz) {
+        if (cfg::auto_tz.value) {
             try {
-                auto [name, offset] = utils::fetch_timezone(cfg::tz_service);
-                if (offset != cfg::utc_offset) {
+                auto [name, offset] = utils::fetch_timezone(cfg::tz_service.value);
+                if (offset != cfg::utc_offset.value) {
                     cfg::set_and_store_utc_offset(offset);
                     if (!silent)
                         notify::info(notify::level::verbose,
-                                     "Updated time zone to " + name +
-                                     "(" + time_utils::tz_offset_to_string(offset) + ")");
+                                     "Updated time zone to %s (%s)",
+                                     name.data(),
+                                     time_utils::tz_offset_to_string(offset).data());
                 }
             }
             catch (std::exception& e) {
                 if (!silent)
                     notify::error(notify::level::verbose,
-                                  "Failed to update time zone: "s + e.what());
+                                  "Failed to update time zone: %s",
+                                  e.what());
                 // Note: not a fatal error, we just keep using the previous time zone.
             }
         }
@@ -338,15 +337,15 @@ namespace core {
         // cancellation point: after the time zone update
         check_stop(token);
 
-        thread_pool pool{static_cast<unsigned>(cfg::threads)};
+        thread_pool pool{static_cast<unsigned>(cfg::threads.value)};
 
-        std::vector<std::string> servers = utils::split(cfg::server, " \t,;");
+        std::vector<std::string> servers = utils::split(cfg::server.value, " \t,;");
 
         // First, resolve all the names, in parallel.
         // Some IP addresses might be duplicated when we use "pool.ntp.org".
         std::set<net::address> addresses;
         {
-            // nested scope so the futures vector is destroyed
+            // nested scope so the futures vector is destroyed early
             using info_vec = std::vector<net::addrinfo::result>;
             std::vector<std::future<info_vec>> futures(servers.size());
 
@@ -366,7 +365,7 @@ namespace core {
                 }
                 catch (std::exception& e) {
                     if (!silent)
-                        notify::error(notify::level::verbose, e.what());
+                        notify::error(notify::level::verbose, "%s", e.what());
                 }
         }
 
@@ -397,9 +396,10 @@ namespace core {
                 corrections.push_back(correction);
                 if (!silent)
                     notify::info(notify::level::verbose,
-                                 to_string(address)
-                                 + ": correction = "s + seconds_to_human(correction, true)
-                                 + ", latency = "s + seconds_to_human(latency));
+                                 "%s: correction = %s, latency = %s",
+                                 to_string(address).data(),
+                                 seconds_to_human(correction, true).data(),
+                                 seconds_to_human(latency).data());
             }
             catch (canceled_error&) {
                 throw;
@@ -407,7 +407,9 @@ namespace core {
             catch (std::exception& e) {
                 if (!silent)
                     notify::error(notify::level::verbose,
-                                  to_string(address) + ": "s + e.what());
+                                  "%s: %s",
+                                  to_string(address).data(),
+                                  e.what());
             }
 
 
@@ -420,11 +422,11 @@ namespace core {
                                             dbl_seconds{0});
         dbl_seconds avg = total / static_cast<double>(corrections.size());
 
-        if (abs(avg) <= cfg::tolerance) {
+        if (abs(avg) <= cfg::tolerance.value) {
             if (!silent)
                 notify::success(notify::level::verbose,
-                                "Tolerating clock drift (correction is only "
-                                + seconds_to_human(avg, true) + ")."s);
+                                "Tolerating clock drift (correction is only %s).",
+                                seconds_to_human(avg, true).data());
             return;
         }
 
@@ -436,7 +438,8 @@ namespace core {
 
         if (!silent)
             notify::success(notify::level::normal,
-                            "Clock corrected by " + seconds_to_human(avg, true));
+                            "Clock corrected by %s",
+                            seconds_to_human(avg, true).data());
 
     }
 
@@ -469,8 +472,8 @@ namespace core {
             std::jthread t{
                 [](std::stop_token token)
                 {
-                    wups::logger::guard logger_guard{PLUGIN_NAME};
-                    notify::guard notify_guard;
+                    wups::logger::guard logger_guard;
+
                     try {
                         // Note: we wait 5 seconds, to minimize spurious network errors.
                         sleep_for(5s, token);
@@ -481,7 +484,7 @@ namespace core {
                         state = state_t::canceled;
                     }
                     catch (std::exception& e) {
-                        notify::error(notify::level::normal, e.what());
+                        notify::error(notify::level::normal, "%s", e.what());
                         state = state_t::finished;
                     }
                 }

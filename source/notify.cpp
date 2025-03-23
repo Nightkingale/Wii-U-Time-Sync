@@ -1,133 +1,167 @@
 /*
  * Wii U Time Sync - A NTP client plugin for the Wii U.
  *
- * Copyright (C) 2024  Daniel K. O.
+ * Copyright (C) 2025  Daniel K. O.
  *
  * SPDX-License-Identifier: MIT
  */
 
-#include <atomic>
-
-#include <notifications/notifications.h>
+#include <cstdarg>
+#include <string>
 
 #include <wupsxx/logger.hpp>
+#include <wupsxx/notify.hpp>
 
 #include "notify.hpp"
 
-#include "cfg.hpp"
 
+using namespace std::literals;
 
 namespace logger = wups::logger;
 
 
 namespace notify {
 
-    std::atomic_uint refs = 0;
+    level max_level = level::quiet;
 
 
     void
     initialize()
+        noexcept
     {
-        // don't initialize again if refs was already positive
-        if (refs++)
-            return;
+        try {
+            wups::notify::initialize(PLUGIN_NAME);
 
-        NotificationModule_InitLibrary();
+            wups::notify::info::set_text_color(255, 255, 255, 255);
+            wups::notify::info::set_bg_color(32, 32, 160, 255);
+
+            wups::notify::error::set_text_color(255, 255, 255, 255);
+            wups::notify::error::set_bg_color(160, 32, 32, 255);
+        }
+        catch (std::exception& e) {
+            logger::printf("notify::initialize() failed: %s\n", e.what());
+        }
     }
 
 
     void
     finalize()
+        noexcept
     {
-        if (!refs)
-            return;
-
-        // don't finalize if refs is still positive
-        if (--refs)
-            return;
-
-        NotificationModule_DeInitLibrary();
+        wups::notify::finalize();
     }
 
 
     void
-    error(level lvl, const std::string& arg)
+    set_max_level(level lvl)
+        noexcept
     {
-        logger::printf("ERROR: %s\n", arg.c_str());
-
-        if (static_cast<int>(lvl) > cfg::notify)
-            return;
-
-        std::string msg = "[" PLUGIN_NAME "] " + arg;
-        NotificationModule_AddErrorNotificationEx(msg.c_str(),
-                                                  cfg::msg_duration.count(),
-                                                  1,
-                                                  {255, 255, 255, 255},
-                                                  {160, 32, 32, 255},
-                                                  nullptr,
-                                                  nullptr,
-                                                  true);
+        max_level = lvl;
     }
 
 
     void
-    info(level lvl, const std::string& arg)
+    set_duration(std::chrono::milliseconds dur)
+        noexcept
     {
-        logger::printf("INFO: %s\n", arg.c_str());
+        wups::notify::info::set_duration(dur);
+        wups::notify::error::set_duration(dur);
+    }
 
-        if (static_cast<int>(lvl) > cfg::notify)
+
+    __attribute__(( __format__ (__printf__, 2, 3)))
+    void
+    error(level lvl,
+          const char* fmt,
+          ...)
+        noexcept
+    {
+        std::va_list logger_args;
+        va_start(logger_args, fmt);
+        try {
+            std::string logger_fmt = "ERROR: "s + fmt + "\n"s;
+            logger::vprintf(logger_fmt.data(), logger_args);
+        }
+        catch (...) {}
+        va_end(logger_args);
+
+        if (lvl > max_level)
             return;
 
-        std::string msg = "[" PLUGIN_NAME "] " + arg;
-        NotificationModule_AddInfoNotificationEx(msg.c_str(),
-                                                 cfg::msg_duration.count(),
-                                                 {255, 255, 255, 255},
-                                                 {32, 32, 160, 255},
-                                                 nullptr,
-                                                 nullptr,
-                                                 true);
+        std::va_list notify_args;
+        va_start(notify_args, fmt);
+        try {
+            wups::notify::error::vshow(fmt, notify_args);
+        }
+        catch (std::exception& e) {
+            logger::printf("notification error: %s\n", e.what());
+        }
+        va_end(notify_args);
     }
 
 
+    __attribute__(( __format__ (__printf__, 2, 3)))
     void
-    success(level lvl, const std::string& arg)
+    info(level lvl,
+         const char* fmt,
+         ...)
+        noexcept
     {
-        logger::printf("SUCCESS: %s\n", arg.c_str());
+        std::va_list logger_args;
+        va_start(logger_args, fmt);
+        try {
+            std::string logger_fmt = "INFO: "s + fmt + "\n"s;
+            logger::vprintf(logger_fmt.data(), logger_args);
+        }
+        catch (...) {}
+        va_end(logger_args);
 
-        if (static_cast<int>(lvl) > cfg::notify)
+        if (lvl > max_level)
             return;
 
-        std::string msg = "[" PLUGIN_NAME "] " + arg;
-        NotificationModule_AddInfoNotificationEx(msg.c_str(),
-                                                 cfg::msg_duration.count(),
-                                                 {255, 255, 255, 255},
-                                                 {32, 160, 32, 255},
-                                                 nullptr,
-                                                 nullptr,
-                                                 true);
+        std::va_list notify_args;
+        va_start(notify_args, fmt);
+        try {
+            wups::notify::info::vshow(fmt, notify_args);
+        }
+        catch (std::exception& e) {
+            logger::printf("notification error: %s\n", e.what());
+        }
+        va_end(notify_args);
     }
 
 
-    guard::guard(bool init) :
-        must_finalize{init}
-    {
-        if (init)
-            initialize();
-    }
-
-
-    guard::~guard()
-    {
-        if (must_finalize)
-            finalize();
-    }
-
-
+    __attribute__(( __format__ (__printf__, 2, 3)))
     void
-    guard::release()
+    success(level lvl,
+            const char* fmt,
+            ...)
+        noexcept
     {
-        must_finalize = false;
+        std::va_list logger_args;
+        va_start(logger_args, fmt);
+        try {
+            std::string logger_fmt = "SUCCESS: "s + fmt + "\n"s;
+            logger::vprintf(logger_fmt.data(), logger_args);
+        }
+        catch (...) {}
+        va_end(logger_args);
+
+        if (lvl > max_level)
+            return;
+
+        std::va_list notify_args;
+        va_start(notify_args, fmt);
+        try {
+            wups::notify::info::vshow(wups::color{255, 255, 255},
+                                      wups::color{32, 160, 32},
+                                      fmt,
+                                      notify_args);
+        }
+        catch (std::exception& e) {
+            logger::printf("notification error: %s\n", e.what());
+        }
+        va_end(notify_args);
     }
 
-
-}
+} // namespace notify
