@@ -18,7 +18,7 @@ jobs:
         docker run --rm -v ${PWD}:/project builder make DEBUG=1
       
     - name: Upload Wii_U_Time_Sync.wps
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v6
       with:
         name: Wii_U_Time_Sync.wps
         path: "*.wps"
