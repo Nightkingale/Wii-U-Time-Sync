@@ -55,10 +55,10 @@ If the program is placed correctly on an SD card, Wii U Time Sync will be listed
     * This cannot be edited in the plugin configuration menu. However, you can edit the Wii U Time Sync configuration file on a computer to adjust the default server, or add more.
       * The configuration file: `wiiu/environments/aroma/plugins/config/Wii U Time Sync.json`
       * If you want to use Microsoft's NTP server in addition to the NTP Pool, you can set it like this:
-            "server": "pool.ntp.org time.windows.com",
+        * `"server": "pool.ntp.org time.windows.com",`
 * `Preview Time`: Lets you preview what the system's clock is currently set to, as well as correction and latency statistics.
 
-> For values you would like to set back to default, you can press the X button while highlighting the option you would like to reset.
+> For values you would like to set back to default, you can press the **X** button while highlighting the option you would like to reset.
 
 ## Assistance
 If you encounter bugs, the best place to report them would be the [Issues](https://github.com/Nightkingale/Wii-U-Time-Sync/issues) tab. This allows for easy tracking and reference, though please check for duplicates first and comment there if possible!
