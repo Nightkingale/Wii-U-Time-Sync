@@ -50,7 +50,7 @@ If the program is placed correctly on an SD card, Wii U Time Sync will be listed
   * https://ipapi.co
 * `Configuration -> Auto Update Time Zone`: Automatically update the `Time Offset (UTC)` every time a clock synchronization happens. Useful to automatically adjust to Daylight Saving Time changes, `off` by default.
 * `Configuration -> Timeout`: The amount of seconds before an established NTP connection will timeout, `5 s` by default.
-* `Configuration -> Tolerance`: The amount of milliseconds in which Wii U Time Sync will tolerate differences, `500 ms` by default.
+* `Configuration -> Tolerance`: The amount of milliseconds in which Wii U Time Sync will tolerate differences, `1000 ms` by default.
 * `Configuration -> NTP Servers`: The list of NTP servers in which the plugin connects to, only `pool.ntp.org` by default.
     * This cannot be edited in the plugin configuration menu. However, you can edit the Wii U Time Sync configuration file on a computer to adjust the default server, or add more.
       * The configuration file: `wiiu/environments/aroma/plugins/config/Wii U Time Sync.json`
