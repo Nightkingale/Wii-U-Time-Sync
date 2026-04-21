@@ -35,29 +35,30 @@ If the program is placed correctly on an SD card, Wii U Time Sync will be listed
 * As long as syncing is enabled by the user, the clock will sync using NTP (network time protocol) whenever Wii U Time Sync starts or when the plugin settings are exited.
 
 ### Configuration
-* `Configuration -> Syncing Enabled`: Enables syncing to the Internet, `off` by default.
+* `Configuration -> Synchronize On Boot`: Enables syncing to the Internet every time the Wii U boots up, `off` by default.
+* `Configuration -> Delay Synchronization`: Wait a few seconds before starting the synchronization. If your network is slow to initialize, increase this delay. The default value is `5s`.
+* `Configuration -> Synchronize After Changing Configuration`: Synchronize the clock again after changing the plugin options, `on` by default.
 * `Configuration -> Show Notifications`: Shows a notification whenever Wii U Time Sync adjusts the clock, `normal` by default.
-    * `quiet` means that no notifications will appear on success.
-    * `normal` means that only success or failure notifications will appear, but no others.
-    * `verbose` means that all notifications (statistics and such) will appear, useful for debugging.
-* `Configuration -> Time Offset (UTC)`: The amount of time to add/subtract from the coordinated universal time, `+00:00` by default.
-* `Configuration -> Detect Time Zone (press A)`: Uses one of three different APIs to guess the time zone, setting the offset accordingly.
+    * `quiet` means that you only get error notifications.
+    * `normal` means that both success and error notifications will appear.
+    * `verbose` means that all notifications (statistics and such) will appear, useful for troubleshooting network and configuration errors.
+* `Configuration -> Notification Duration`: The amount of seconds which notifications will appear on screen for, `5 s` by default.
+* `Configuration -> Time Offset (UTC)`: The difference between your local time and the coordinated universal time, `+00:00` by default.
+* `Configuration -> Detect Time Zone (press A)`: Select an online service to automatically set the `Time Offset (UTC)`, using your IP address:
   * http://ip-api.com
   * https://ipwho.is
   * https://ipapi.co
-* `Configuration -> Auto Update Time Zone`: Automatically utilizes an IP Geolocation API to set your offset accordingly, `off` by default.
-* `Configuration -> Notification Duration`: The amount of seconds which notifications will appear on screen for, `5 s` by default.
+* `Configuration -> Auto Update Time Zone`: Automatically update the `Time Offset (UTC)` every time a clock synchronization happens. Useful to automatically adjust to Daylight Saving Time changes, `off` by default.
 * `Configuration -> Timeout`: The amount of seconds before an established NTP connection will timeout, `5 s` by default.
 * `Configuration -> Tolerance`: The amount of milliseconds in which Wii U Time Sync will tolerate differences, `500 ms` by default.
-* `Configuration -> Background Threads`: Controls how many servers are queried at once, `4` by default.
-    * If you stick to the default server, you do not need to set this to more than `4`.
 * `Configuration -> NTP Servers`: The list of NTP servers in which the plugin connects to, only `pool.ntp.org` by default.
-    * This cannot be edited on the console. However, you can edit the Wii U Time Sync configuration file on a computer to adjust the default server, or add more.
-        * The configuration file: `wiiu/environments/aroma/plugins/config/Wii U Time Sync.json`
-        * An example edit: `"server": "pool.ntp.org time.windows.com",`
+    * This cannot be edited in the plugin configuration menu. However, you can edit the Wii U Time Sync configuration file on a computer to adjust the default server, or add more.
+      > The configuration file: `wiiu/environments/aroma/plugins/config/Wii U Time Sync.json`
+      > If you want to use Microsoft's NTP server in addition to the NTP Pool, you can set it like this:
+      >     "server": "pool.ntp.org time.windows.com",
 * `Preview Time`: Lets you preview what the system's clock is currently set to, as well as correction and latency statistics.
 
-For values you would like to set back to default, you can press the X button while highlighting the option you would like to reset.
+> For values you would like to set back to default, you can press the X button while highlighting the option you would like to reset.
 
 ## Assistance
 If you encounter bugs, the best place to report them would be the [Issues](https://github.com/Nightkingale/Wii-U-Time-Sync/issues) tab. This allows for easy tracking and reference, though please check for duplicates first and comment there if possible!
