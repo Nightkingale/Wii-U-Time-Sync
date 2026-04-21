@@ -23,7 +23,7 @@
 #include "error.hpp"
 
 
-// Note: very simplified socket class, only what the Wii U supports.
+// NOTE: very simplified socket class, only what the Wii U supports.
 
 namespace net {
 

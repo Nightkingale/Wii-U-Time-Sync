@@ -16,7 +16,7 @@
 #include <netinet/in.h>         // sockaddr_in, in_addr_t, in_port_t
 
 
-// Note: only IPv4 address families, the Wii U does not support IPv6
+// NOTE: only IPv4 address families, the Wii U does not support IPv6
 
 namespace net {
 
@@ -24,7 +24,7 @@ namespace net {
     using port_t = in_port_t;
 
 
-    // Note: this is small enough, you can pass it by value everywhere.
+    // NOTE: this is small enough, you can pass it by value everywhere.
 
     struct address {
 

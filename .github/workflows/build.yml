@@ -4,21 +4,21 @@ on: [push, pull_request]
 
 jobs:
   build-binary:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
     steps:
     - name: Checkout Code
       uses: actions/checkout@v6
       with:
         fetch-depth: 1
-        submodules: true
-      
+        submodules: recursive
+
     - name: Build Binary
       run: |
         docker build -t builder .
         docker run --rm -v ${PWD}:/project builder make DEBUG=1
-      
+
     - name: Upload Wii_U_Time_Sync.wps
-      uses: actions/upload-artifact@v6
+      uses: actions/upload-artifact@v7
       with:
         name: Wii_U_Time_Sync.wps
         path: "*.wps"

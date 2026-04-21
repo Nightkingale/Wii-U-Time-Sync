@@ -101,7 +101,7 @@ clock_item::update_status_msg()
 
 
 /*
- * Note: this code is very similar to core::run(), but runs in a single thread.
+ * NOTE: this code is very similar to core::run(), but does not apply any correction.
  */
 void
 clock_item::run()
@@ -119,14 +119,14 @@ clock_item::run()
 
     auto servers = utils::split(cfg::server.value, " \t,;");
 
-    net::addrinfo::hints opts{ .type = net::socket::type::udp };
-
     dbl_seconds total = 0s;
     unsigned num_values = 0;
 
     for (const auto& server : servers) {
         auto& si = server_infos.at(server);
         try {
+            // NOTE: be as specific as possible about the name we want to resolve.
+            net::addrinfo::hints opts{ .type = net::socket::type::udp };
             auto infos = net::addrinfo::lookup(server, "123", opts);
 
             si.name->text = to_string(infos.size())
@@ -144,10 +144,10 @@ clock_item::run()
                     total += correction;
                     ++num_values;
                     logger::printf("%s (%s): correction = %s, latency = %s\n",
-                                   server.c_str(),
-                                   to_string(info.addr).c_str(),
-                                   seconds_to_human(correction, true).c_str(),
-                                   seconds_to_human(latency).c_str());
+                                   server.data(),
+                                   to_string(info.addr).data(),
+                                   seconds_to_human(correction, true).data(),
+                                   seconds_to_human(latency).data());
                 }
                 catch (std::exception& e) {
                     ++errors;

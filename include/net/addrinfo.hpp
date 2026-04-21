@@ -18,7 +18,7 @@
 #include "address.hpp"
 #include "socket.hpp"
 
-// Note: Wii U only supports IPv4, so this is hardcoded for IPv4
+// NOTE: Wii U only supports IPv4, so this is hardcoded for IPv4
 
 namespace net::addrinfo {
 
@@ -41,8 +41,6 @@ namespace net::addrinfo {
     lookup(const std::optional<std::string>& name,
            const std::optional<std::string>& service = {},
            std::optional<hints> options = {});
-
-
 
 } // namespace net::addrinfo
 

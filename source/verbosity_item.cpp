@@ -33,7 +33,7 @@ namespace {
 
 
 verbosity_item::verbosity_item(wups::option<int>& opt) :
-    wups::int_item{opt}
+    wups::int_item{opt, {}}
 {}
 
 

@@ -19,7 +19,7 @@
 #include "net/socket.hpp"
 
 
-// Note: WUT doesn't have SOL_IP, but IPPROTO_IP seems to work.
+// NOTE: WUT doesn't have SOL_IP, but IPPROTO_IP seems to work.
 #ifndef SOL_IP
 #define SOL_IP IPPROTO_IP
 #endif

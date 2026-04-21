@@ -23,7 +23,7 @@ using wups::text_item;
 
 
 /*
- * Note: the clock item needs to know about the server items added later.
+ * NOTE: the clock item needs to know about the server items added later.
  * It's a bit ugly, because we can't manage it from the category object.
  */
 category

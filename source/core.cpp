@@ -31,7 +31,6 @@
 #include "net/socket.hpp"
 #include "notify.hpp"
 #include "ntp.hpp"
-#include "thread_pool.hpp"
 #include "time_utils.hpp"
 #include "utc.hpp"
 #include "utils.hpp"
@@ -103,7 +102,7 @@ namespace core {
 
 
     void
-    check_stop(std::stop_token token)
+    throw_if_stop(std::stop_token token)
     {
         if (token.stop_requested())
             throw canceled_error{};
@@ -117,14 +116,14 @@ namespace core {
         using clock = std::chrono::steady_clock;
         const auto deadline = clock::now() + t;
         while (clock::now() < deadline) {
-            check_stop(token);
+            throw_if_stop(token);
             std::this_thread::sleep_for(100ms);
         }
     }
 
 
-    // Note: hardcoded for IPv4, the Wii U doesn't have IPv6.
-    std::pair<dbl_seconds, dbl_seconds>
+    // NOTE: hardcoded for IPv4, the Wii U doesn't have IPv6.
+    correction_latency_t
     ntp_query(std::stop_token token,
               net::address address)
     {
@@ -143,7 +142,7 @@ namespace core {
 
     try_again_send:
         // cancellation point: before sending
-        check_stop(token);
+        throw_if_stop(token);
         auto t1 = to_ntp(utc::now());
         packet.transmit_time = t1;
 
@@ -154,7 +153,7 @@ namespace core {
                 throw e;
             if (++send_attempts < max_send_attempts) {
                 // cancellation point: before sleeping
-                check_stop(token);
+                throw_if_stop(token);
                 std::this_thread::sleep_for(100ms);
                 goto try_again_send;
             } else
@@ -167,7 +166,7 @@ namespace core {
 
     try_again_poll:
         // cancellation point: before polling
-        check_stop(token);
+        throw_if_stop(token);
         auto readable_status = sock.try_is_readable(cfg::timeout.value);
         if (!readable_status) {
             // Wii U OS can only handle 16 concurrent select()/poll() calls,
@@ -177,7 +176,7 @@ namespace core {
                 throw e;
             if (++poll_attempts < max_poll_attempts) {
                 // cancellation point: before sleeping
-                check_stop(token);
+                throw_if_stop(token);
                 std::this_thread::sleep_for(10ms);
                 goto try_again_poll;
             } else
@@ -330,92 +329,71 @@ namespace core {
                     notify::error(notify::level::verbose,
                                   "Failed to update time zone: %s",
                                   e.what());
-                // Note: not a fatal error, we just keep using the previous time zone.
+                // NOTE: not a fatal error, we just keep using the previous time zone.
             }
         }
 
         // cancellation point: after the time zone update
-        check_stop(token);
+        throw_if_stop(token);
 
-        thread_pool pool{static_cast<unsigned>(cfg::threads.value)};
+        const auto servers = utils::split(cfg::server.value, " \t,;");
 
-        std::vector<std::string> servers = utils::split(cfg::server.value, " \t,;");
-
-        // First, resolve all the names, in parallel.
-        // Some IP addresses might be duplicated when we use "pool.ntp.org".
-        std::set<net::address> addresses;
-        {
-            // nested scope so the futures vector is destroyed early
-            using info_vec = std::vector<net::addrinfo::result>;
-            std::vector<std::future<info_vec>> futures(servers.size());
-
-            net::addrinfo::hints opts{ .type = net::socket::type::udp };
-            // Launch DNS queries asynchronously.
-            for (auto [fut, server] : std::views::zip(futures, servers))
-                fut = pool.submit(net::addrinfo::lookup, server, "123"s, opts);
-
-            // cancellation point: after submitting the DNS queries
-            check_stop(token);
-
-            // Collect all future results.
-            for (auto& fut : futures)
-                try {
-                    for (auto info : fut.get())
-                        addresses.insert(info.addr);
-                }
-                catch (std::exception& e) {
-                    if (!silent)
-                        notify::error(notify::level::verbose, "%s", e.what());
-                }
-        }
-
-        if (addresses.empty()) {
-            // Probably a mistake in config, or network failure.
-            throw runtime_error{"No NTP address could be used."};
-        }
-
-        // cancellation point: before the NTP queries are submitted
-        check_stop(token);
-
-        // Launch NTP queries asynchronously.
-        std::vector<std::future<std::pair<dbl_seconds, dbl_seconds>>>
-            futures(addresses.size());
-        for (auto [fut, address] : std::views::zip(futures, addresses))
-            fut = pool.submit(ntp_query, token, address);
-
-        // cancellation point: after NTP queries are submited
-        check_stop(token);
-
-        // Collect all future results.
         std::vector<dbl_seconds> corrections;
-        for (auto [address, fut] : std::views::zip(addresses, futures))
+
+        // First, resolve all addresses. Some IP addresses might be duplicated when we
+        // use "pool.ntp.org", so we use a set to deduplicate.
+        std::set<net::address> addresses;
+        for (auto& server : servers) {
             try {
-                // cancellation point: before blocking waiting for a NTP result
-                check_stop(token);
-                auto [correction, latency] = fut.get();
-                corrections.push_back(correction);
-                if (!silent)
-                    notify::info(notify::level::verbose,
-                                 "%s: correction = %s, latency = %s",
-                                 to_string(address).data(),
-                                 seconds_to_human(correction, true).data(),
-                                 seconds_to_human(latency).data());
+                throw_if_stop(token);
+                // NOTE: be as specific as possible about the name we want to resolve.
+                net::addrinfo::hints opts { .type = net::socket::type::udp };
+                auto resolved = net::addrinfo::lookup(server, "123", opts);
+                for (const auto& address : resolved)
+                    addresses.insert(address.addr);
             }
             catch (canceled_error&) {
                 throw;
             }
             catch (std::exception& e) {
+                logger::printf("ERROR resolving server %s: %s\n", server.data(), e.what());
                 if (!silent)
                     notify::error(notify::level::verbose,
                                   "%s: %s",
-                                  to_string(address).data(),
+                                  server.data(),
                                   e.what());
             }
+        }
 
+        // Now perform a NTP query on each address to collect all corrections.
+        for (const auto& address : addresses) {
+            auto address_str = to_string(address);
+            try {
+                auto [correction, latency] = ntp_query(token, address);
+                corrections.push_back(correction);
+                notify::info(notify::level::verbose,
+                             "%s: correction = %s, latency = %s",
+                             address_str.data(),
+                             seconds_to_human(correction, true).data(),
+                             seconds_to_human(latency).data());
+            }
+            catch (canceled_error&) {
+                throw;
+            }
+            catch (std::exception& e) {
+                logger::printf("ERROR querying address %s: %s\n",
+                               address_str.data(),
+                               e.what());
+                if (!silent)
+                    notify::error(notify::level::verbose,
+                                  "%s: %s",
+                                  address_str.data(),
+                                  e.what());
+            }
+        }
 
         if (corrections.empty())
             throw runtime_error{"No NTP server could be used!"};
-
 
         dbl_seconds total = std::accumulate(corrections.begin(),
                                             corrections.end(),
@@ -430,8 +408,8 @@ namespace core {
             return;
         }
 
-        // cancellation point: before modifying the clock
-        check_stop(token);
+        // Cancellation point: before modifying the clock.
+        throw_if_stop(token);
 
         if (!apply_clock_correction(avg))
             throw runtime_error{"Failed to set system clock!"};
@@ -440,7 +418,6 @@ namespace core {
             notify::success(notify::level::normal,
                             "Clock corrected by %s",
                             seconds_to_human(avg, true).data());
-
     }
 
 
@@ -465,18 +442,18 @@ namespace core {
 
 
         void
-        run()
+        run(std::chrono::seconds delay)
         {
             state = state_t::started;
 
             std::jthread t{
-                [](std::stop_token token)
+                [](std::stop_token token,
+                   std::chrono::seconds delay)
                 {
                     wups::logger::guard logger_guard;
 
                     try {
-                        // Note: we wait 5 seconds, to minimize spurious network errors.
-                        sleep_for(5s, token);
+                        sleep_for(delay, token);
                         core::run(token, false);
                         state = state_t::finished;
                     }
@@ -487,8 +464,8 @@ namespace core {
                         notify::error(notify::level::normal, "%s", e.what());
                         state = state_t::finished;
                     }
-                }
-            };
+                },
+                delay};
 
             stopper = t.get_stop_source();
 
@@ -497,10 +474,10 @@ namespace core {
 
 
         void
-        run_once()
+        run_once(std::chrono::seconds delay)
         {
             if (state != state_t::finished)
-                run();
+                run(delay);
         }
 
 

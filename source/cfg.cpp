@@ -47,6 +47,9 @@ namespace cfg {
     WUPSXX_OPTION("Synchronize On Boot",
                   bool, sync_on_boot, true);
 
+    WUPSXX_OPTION("  └ Delay Synchronization",
+                  seconds, sync_on_boot_delay, 5s, 0s, 30s);
+
     WUPSXX_OPTION("Synchronize After Changing Configuration",
                   bool, sync_on_changes, true);
 
@@ -69,10 +72,7 @@ namespace cfg {
                   seconds, timeout, 5s, 1s, 10s);
 
     WUPSXX_OPTION("Tolerance",
-                  milliseconds, tolerance, 1000ms, 0ms, 10s);
-
-    WUPSXX_OPTION("Background Threads",
-                  int, threads, 4, 0, 4);
+                  milliseconds, tolerance, 1s, 0ms, 10s);
 
     WUPSXX_OPTION("NTP servers",
                   std::string, server, "pool.ntp.org");
@@ -80,6 +80,7 @@ namespace cfg {
 
     std::vector<wups::option_base*> all_options = {
         &sync_on_boot,
+        &sync_on_boot_delay,
         &sync_on_changes,
         &notify,
         &msg_duration,
@@ -88,7 +89,6 @@ namespace cfg {
         &auto_tz,
         &timeout,
         &tolerance,
-        &threads,
         &server,
     };
 
@@ -129,9 +129,11 @@ namespace cfg {
 
         category cat{"Configuration"};
 
-        cat.add(make_item(sync_on_boot, "on", "off"));
+        cat.add(make_item(sync_on_boot));
 
-        cat.add(make_item(sync_on_changes, "on", "off"));
+        cat.add(make_item(sync_on_boot_delay));
+
+        cat.add(make_item(sync_on_changes));
 
         cat.add(verbosity_item::create(notify));
 
@@ -141,13 +143,15 @@ namespace cfg {
 
         cat.add(time_zone_query_item::create(tz_service));
 
-        cat.add(make_item(auto_tz, "on", "off"));
+        cat.add(make_item(auto_tz));
 
         cat.add(make_item(timeout));
 
-        cat.add(make_item(tolerance, 500ms, 100ms));
-
-        cat.add(make_item(threads));
+        cat.add(make_item(tolerance,
+                          {
+                              .fast_increment = 1000ms,
+                              .slow_increment = 100ms
+                          }));
 
         // show current NTP server address, no way to change it.
         cat.add(make_item(server.label, server.value));
@@ -183,7 +187,7 @@ namespace cfg {
 
         if (sync_on_changes.value && important_vars_changed()) {
             core::background::stop();
-            core::background::run();
+            core::background::run(0s);
         }
 
         save();
