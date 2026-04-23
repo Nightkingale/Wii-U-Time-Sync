@@ -26,7 +26,7 @@ WUT_ROOT := $(DEVKITPRO)/wut
 # PLUGIN_LICENSE sets the license of the plugin.
 #-------------------------------------------------------------------------------
 PLUGIN_NAME    := Wii U Time Sync
-PLUGIN_VERSION := v3.1.0+
+PLUGIN_VERSION := v4.0.0+
 
 #-------------------------------------------------------------------------------
 # TARGET is the name of the output.
