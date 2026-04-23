@@ -194,9 +194,6 @@ namespace cfg {
     }
 
 
-    void migrate_old_config();
-
-
     void
     init()
         noexcept
@@ -206,7 +203,6 @@ namespace cfg {
                        menu_open,
                        menu_close);
             load();
-            migrate_old_config();
         }
         catch (std::exception& e) {
             logger::printf("Error in cfg::init(): %s\n", e.what());
@@ -247,39 +243,6 @@ namespace cfg {
         }
         catch (std::exception& e) {
             logger::printf("Error in cfg::save(): %s\n", e.what());
-        }
-    }
-
-
-    void
-    migrate_old_config()
-    {
-        // check for leftovers from old versions
-        using std::to_string;
-        using wups::to_string;
-
-        hours old_hours = 0h;
-        minutes old_minutes = 0min;
-        if (wups::load("hours", old_hours) || wups::load("minutes", old_minutes)) {
-            minutes offset = old_hours + old_minutes;
-            set_and_store_utc_offset(offset);
-            WUPSStorageAPI::DeleteItem("hours");
-            WUPSStorageAPI::DeleteItem("minutes");
-            save();
-            logger::printf("Migrated old config: hours=%s, minutes=%s -> utc_offset=%s.\n",
-                           to_string(old_hours).c_str(),
-                           to_string(old_minutes).c_str(),
-                           time_utils::tz_offset_to_string(utc_offset.value).c_str());
-        }
-
-        bool old_sync = false;
-        if (wups::load("sync", old_sync)) {
-            WUPSStorageAPI::DeleteItem("sync");
-            sync_on_boot.value = old_sync;
-            save();
-            logger::printf("Migrated old config: sync=%s -> sync_on_boot=%s\n",
-                           (old_sync ? "true" : "false"),
-                           (sync_on_boot.value ? "true" : "false"));
         }
     }
 
