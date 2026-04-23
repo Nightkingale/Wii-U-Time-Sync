@@ -70,7 +70,7 @@ WARN_FLAGS := -Wall -Wextra -Wundef -Wpointer-arith -Wcast-align -Wno-odr
 
 OPTFLAGS := -Os -fipa-pta -ffunction-sections -fdata-sections -flto
 
-CFLAGS := $(WARN_FLAGS) $(OPTFLAGS) $(MACHDEP)
+CFLAGS := $(WARN_FLAGS) $(OPTFLAGS) $(MACHDEP) -pthread
 
 CXXFLAGS := $(CFLAGS)
 
