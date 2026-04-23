@@ -72,11 +72,9 @@ For assistance or other inquiries, the best place to reach out would be the [Nig
 The changes will not be reflected in the HOME Menu and most other applications right away, so the console will need to be rebooted for changes to be completed.
 
 ## Compilation
-You should have [wut](https://github.com/devkitPro/wut) installed. Following the [devkitPro Getting Started guide](https://devkitpro.org/wiki/Getting_Started) will set you up with it and all other basic dependancies. Additionally, you will need the following dependancies:
+You should have [wut](https://github.com/devkitPro/wut) installed. Following the [devkitPro Getting Started guide](https://devkitpro.org/wiki/Getting_Started) will set you up with it and all other basic dependancies. Additionally, you will need the following dependency:
 
-* [libcurlwrapper](https://github.com/wiiu-env/libcurlwrapper)
-* [libnotifications](https://github.com/wiiu-env/libnotifications)
-* [wiiupluginsystem](https://github.com/wiiu-env/wiiupluginsystem)
+* [wiiu-curl](https://github.com/dkosmari/wiiu-curl-package)
 
 After all dependancies have been installed, you can just run `make`.
 
