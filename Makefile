@@ -8,7 +8,12 @@ endif
 
 TOPDIR ?= $(CURDIR)
 
-include $(DEVKITPRO)/wups/share/wups_rules
+LIBCURLWRAPPER_DIR := $(TOPDIR)/external/libcurlwrapper
+LIBNOTIFICATIONS_DIR := $(TOPDIR)/external/libwupsxx/external/libnotifications
+WUPS_DIR := $(TOPDIR)/external/libwupsxx/external/WiiUPluginSystem
+WUPS_ROOT := $(WUPS_DIR)
+
+include $(WUPS_DIR)/share/wups_rules
 
 WUMS_ROOT := $(DEVKITPRO)/wums
 WUT_ROOT := $(DEVKITPRO)/wut
@@ -32,7 +37,10 @@ PLUGIN_VERSION := v3.1.0+
 #-------------------------------------------------------------------------------
 TARGET   := Wii_U_Time_Sync
 BUILD    := build
-SOURCES  := source source/net external/libwupsxx/src
+SOURCES  := \
+	source \
+	source/net \
+	external/libwupsxx/src
 SOURCES_EXCLUDE := \
 	external/libwupsxx/src/shortcut.cpp \
 	external/libwupsxx/src/shortcut_item.cpp
@@ -56,13 +64,15 @@ endif
 #-------------------------------------------------------------------------------
 # options for code generation
 #-------------------------------------------------------------------------------
+CXX += -std=c++23
+
 WARN_FLAGS := -Wall -Wextra -Wundef -Wpointer-arith -Wcast-align -Wno-odr
 
-OPTFLAGS := -Os -fipa-pta -ffunction-sections -flto
+OPTFLAGS := -Os -fipa-pta -ffunction-sections -fdata-sections -flto
 
 CFLAGS := $(WARN_FLAGS) $(OPTFLAGS) $(MACHDEP)
 
-CXXFLAGS := $(CFLAGS) -std=c++23
+CXXFLAGS := $(CFLAGS)
 
 DEFINES := '-DPLUGIN_NAME="$(PLUGIN_NAME)"'                   \
            '-DPLUGIN_VERSION="$(PLUGIN_VERSION)"'
@@ -79,13 +89,23 @@ LDFLAGS	= -g \
           -Wl,-Map,$(notdir $*.map) \
           $(CXXFLAGS)
 
-LIBS := -lcurlwrapper -lnotifications -lwups -lwut
+LIBS := \
+	-lcurlwrapper \
+	-lnotifications \
+	-lwups \
+	-lwut
 
 #-------------------------------------------------------------------------------
 # list of directories containing libraries, this must be the top level
 # containing include and lib
 #-------------------------------------------------------------------------------
-LIBDIRS	:= $(WUMS_ROOT) $(WUPS_ROOT) $(WUT_ROOT) $(PORTLIBS)
+LIBDIRS	:= \
+	$(LIBCURLWRAPPER_DIR) \
+	$(LIBNOTIFICATIONS_DIR) \
+	$(PORTLIBS) \
+	$(WUPS_DIR) \
+	$(WUPS_ROOT) \
+	$(WUT_ROOT)
 
 #-------------------------------------------------------------------------------
 # no real need to edit anything past this point unless you need to add additional
@@ -134,7 +154,10 @@ export LIBPATHS	:=	$(foreach dir,$(LIBDIRS),-L$(dir)/lib)
 all: $(BUILD)
 
 $(BUILD):
-	@[ -d $@ ] || mkdir -p $@
+	@$(MAKE) -C $(LIBCURLWRAPPER_DIR) TOPDIR=$(LIBCURLWRAPPER_DIR)
+	@$(MAKE) -C $(LIBNOTIFICATIONS_DIR) TOPDIR=$(LIBNOTIFICATIONS_DIR)
+	@$(MAKE) -C $(WUPS_DIR) lib/libwups.a TOPDIR=$(WUPS_DIR)
+	@$(shell [ -d $@ ] || mkdir -p $@)
 	mkdir -p $(addprefix build/,$(sort $(dir $(OFILES))))
 	$(MAKE) -C $(BUILD) -f $(TOPDIR)/Makefile V=$(DEBUG)
 
@@ -142,6 +165,9 @@ $(BUILD):
 clean:
 	$(info clean ...)
 	$(RM) -r $(BUILD) $(TARGET).wps $(TARGET).elf
+	@$(MAKE) -C $(LIBCURLWRAPPER_DIR) clean TOPDIR=$(LIBCURLWRAPPER_DIR)
+	@$(MAKE) -C $(LIBNOTIFICATIONS_DIR) clean TOPDIR=$(LIBNOTIFICATIONS_DIR)
+	@$(MAKE) -C $(WUPS_DIR) clean TOPDIR=$(WUPS_DIR)
 
 #-------------------------------------------------------------------------------
 else

@@ -1,3 +1,6 @@
+[submodule "external/libcurlwrapper"]
+	path = external/libcurlwrapper
+	url = https://github.com/wiiu-env/libcurlwrapper.git
 [submodule "external/libwupsxx"]
 	path = external/libwupsxx
 	url = https://github.com/dkosmari/libwupsxx.git

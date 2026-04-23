@@ -11,7 +11,6 @@
 
 #include <stop_token>
 #include <string>
-#include <utility>              // pair<>
 
 #include "net/address.hpp"
 #include "time_utils.hpp"
@@ -22,7 +21,12 @@ namespace core {
     using time_utils::dbl_seconds;
 
 
-    std::pair<dbl_seconds, dbl_seconds>
+    struct correction_latency_t {
+        dbl_seconds correction;
+        dbl_seconds latency;
+    };
+
+    correction_latency_t
     ntp_query(std::stop_token token,
               net::address address);
 
@@ -38,8 +42,8 @@ namespace core {
 
     namespace background {
 
-        void run();
-        void run_once();
+        void run(std::chrono::seconds delay);
+        void run_once(std::chrono::seconds delay);
         void stop();
 
     } // namespace background

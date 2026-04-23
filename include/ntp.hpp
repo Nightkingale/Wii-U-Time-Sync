@@ -62,7 +62,7 @@ namespace ntp {
     using short_timestamp = std::uint32_t;
 
 
-    // Note: all fields are big-endian
+    // NOTE: all fields are big-endian
     struct packet {
 
         enum class leap_flag : std::uint8_t {
@@ -84,7 +84,7 @@ namespace ntp {
         };
 
 
-        // Note: all fields are zero-initialized by default constructor.
+        // NOTE: all fields are zero-initialized by default constructor.
         std::uint8_t lvm           = 0; // leap, version and mode
         std::uint8_t stratum       = 0; // Stratum level of the local clock.
         std::int8_t  poll_exp      = 0; // Maximum interval between successive messages.
