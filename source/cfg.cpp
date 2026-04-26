@@ -74,7 +74,7 @@ namespace cfg {
     WUPSXX_OPTION("Tolerance",
                   milliseconds, tolerance, 1s, 0ms, 10s);
 
-    WUPSXX_OPTION("NTP servers",
+    WUPSXX_OPTION("NTP Servers",
                   std::string, server, "pool.ntp.org");
 
 
